@@ -11,8 +11,7 @@
 -module(mit_mgr).
 
 -include("mit.hrl").
-
--include("elog.hrl").
+-include_lib("elog.hrl").
 
 -behavior(gen_server).
 

@@ -16,8 +16,7 @@
 -behavior(gen_server).
 
 -include("mit.hrl").
-
--include("elog.hrl").
+-include_lib("elog.hrl").
 
 %start/stop
 -export([start_link/0,

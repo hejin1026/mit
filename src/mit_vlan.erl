@@ -3,7 +3,7 @@
 -author('hejin-2-24').
 
 -include("mit.hrl").
--include("elog.hrl").
+-include_lib("elog.hrl").
 
 -behavior(gen_server).
 

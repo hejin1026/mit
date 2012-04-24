@@ -12,8 +12,7 @@
 -author('ery.lee@gmail.com').
 
 -include("mit.hrl").
-
--include("elog.hrl").
+-include_lib("elog.hrl").
 
 -import(extbif, [to_binary/1, to_list/1]).
 

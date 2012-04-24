@@ -14,8 +14,7 @@
 -import(extbif, [to_binary/1, to_list/1]).
 
 -include("mit.hrl").
-
--include("elog.hrl").
+-include_lib("elog.hrl").
 
 -behavior(gen_server).
 
