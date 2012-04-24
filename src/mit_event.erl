@@ -12,7 +12,7 @@
 
 -author('ery.lee@gmail.com').
 
--include_lib("elog.hrl").
+-include_lib("elog/include/elog.hrl").
 
 -export([start_link/0, stop/0]).
 
