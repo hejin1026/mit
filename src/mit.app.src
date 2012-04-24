@@ -1,0 +1,8 @@
+{application, mit,
+ [{description, "mit"},
+  {vsn, "0.1.0"},
+  {modules, []},
+  {registered, [mit]},
+  {applications, [kernel, stdlib, master]},
+  {env, []},
+  {mod, {mit_app, []}}]}.
