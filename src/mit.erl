@@ -17,7 +17,6 @@
          lookup/1,
          lookup/2,
          update/1,
-         delete/1,
          delete/2]).
 
 %callback
@@ -106,10 +105,6 @@ delete(dn, Dn) ->
         mnesia:delete({entry, Dn})
     end).
 
-
-delete(id, Uid) ->
-    gen_server:cast(?MODULE, {delete, uid, Uid}).
-
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
 %%                         {ok, State, Timeout} |
@@ -135,7 +130,6 @@ handle_call(Req, _From, State) ->
     {reply, ok, State}.
 
 handle_cast(_Msg, State) ->
-	?ERROR("unexpected requrest: ~p", [Req]),
     {noreply, State}.
 
 handle_info(sync_changes, State) ->

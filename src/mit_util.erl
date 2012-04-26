@@ -3,6 +3,7 @@
 -created("hejin 2012-4-26").
 
 -include_lib("elog/include/elog.hrl").
+-include("mit.hrl").
 
 -import(extbif, [to_list/1, to_binary/1]).
 
