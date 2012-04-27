@@ -88,7 +88,6 @@ update(Dn, Attrs) ->
 init([]) ->
     case catch do_init() of
     {ok, State} ->
-        io:format("finish start mit board...~n",[]),
         {ok, State};
     {error, Reason} ->
         ?ERROR("start failure...",[]),
@@ -116,7 +115,7 @@ do_init() ->
             ?INFO("cannot find the device of the board: ~p", [Board])
         end
     end, Boards),
-    ?PRINT(" cached ~p boards ", [length(Boards)]),
+    io:format("finish start board : ~p ~n", [length(Boards)]),
     {ok, state}.
 
 %%--------------------------------------------------------------------

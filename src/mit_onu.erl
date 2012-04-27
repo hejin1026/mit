@@ -186,8 +186,8 @@ init([]) ->
                           ?INFO("cannot find olt: ~p ~n", [OltId])
                   end
           end, Onus),
-          io:format("finish start mit onu...~n",[]),
-            {ok, state};
+          io:format("finish start onu : ~p ~n", [length(Onus)]),
+          {ok, state};
         {error, Reason} ->
             ?ERROR("mit_onu start failure...~p",[Reason]),
             {stop, Reason}

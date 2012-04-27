@@ -94,7 +94,7 @@ init([]) ->
                 io:format("cannot find olt: ~p", [OltId])
             end
         end, Gems),
-        ?PRINT(" cached ~p Gems ", [length(Gems)]),
+        io:format("finish start gems : ~p ~n", [length(Gems)]),
         {ok, state};
     {error, Reason} ->
         {stop, Reason}

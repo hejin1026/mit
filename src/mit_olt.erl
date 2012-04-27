@@ -149,7 +149,7 @@ init([]) ->
                 Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(olt,Id), type = olt, parent = undefined, data = Olt},
                 mit:update(Entry)
             end, Olts),
-            io:format("finish start mit olt...~n",[]),
+            io:format("finish start olt : ~p ~n", [length(Olts)]),
             {ok, state};
         {error, Reason} ->
             ?ERROR("start failure...~p",[Reason]),

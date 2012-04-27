@@ -89,6 +89,7 @@ init([]) ->
                 io:format("cannot find olt: ~p", [OltId])
             end
         end, Vlans),
+        io:format("finish start vlan : ~p ~n", [length(Vlans)]),
         {ok, state};
     {error, Reason} ->
         ?ERROR("start failure...",[]),
