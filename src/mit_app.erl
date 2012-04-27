@@ -7,8 +7,7 @@
 -export([start/2, stop/1]).
 
 start(normal, _Args) ->
-	{ok, SupPid} = mit_sup:start_link(),
-	SupPid.	
+	mit_sup:start_link().
 
 stop(_) ->
 	ok.

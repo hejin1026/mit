@@ -1,18 +1,4 @@
-%%%----------------------------------------------------------------------
-%%% File    : mit_event.erl
-%%% Author  : Ery Lee <ery.lee@gmail.com>
-%%% Purpose : MIT change callback.
-%%% Created : 28 Feb. 2008
-%%% Updated : 07 Dec. 2009
-%%% License : http://www.opengoss.com
-%%%
-%%% Copyright (C) 2007-2009, www.opengoss.com 
-%%%----------------------------------------------------------------------
 -module(mit_event). 
-
--author('ery.lee@gmail.com').
-
--include_lib("elog/include/elog.hrl").
 
 -export([start_link/0, stop/0]).
 
@@ -26,6 +12,7 @@
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link() ->
+    io:format("start mit event ~n",[]),
     gen_event:start_link({local, ?MODULE}).
 
 stop() ->
