@@ -54,7 +54,7 @@ stop() ->
 all_monet() ->
     Sql = "select t2.means as means, t1.*   from mit_ports t1 LEFT join collect_means t2 on
         (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.port_category in (1,2)",
-    case emysql:sql_query(Sql) of
+    case emysql:sqlquery(Sql) of
         {ok, Records} ->
             Records;
         {error, Reason}  ->
@@ -66,7 +66,7 @@ one(Id) ->
     Sql = "select t2.means as means, t1.*   from mit_ports t1 LEFT join collect_means t2 on
         (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.port_category in (1,2)" ++
         "and t1.id = " ++ to_list(Id),
-    case emysql:sql_query(Sql) of
+    case emysql:sqlquery(Sql) of
         {ok, Records} ->
             Records;
         {error, Reason}  ->

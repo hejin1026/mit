@@ -56,7 +56,7 @@ update(Dn, Attrs) ->
     gen_server:cast(?MODULE, {update, Dn, Attrs}).
 
 init([]) ->
-    case emysql:sql_query("select * from fault_events where
+    case emysql:sqlquery("select * from fault_events where
         (alarm_name = 'hwolteponlumlost' or alarm_name = 'hwAlarmonusingledown') and alarm_state <> 3  ") of
     {ok, Faults} ->
         lists:foreach(fun(Fault) ->

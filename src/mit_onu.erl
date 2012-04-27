@@ -72,7 +72,7 @@ redisco() ->
     get_data(Sql).
 
 get_data(Sql) ->
-    case emysql:sql_query(Sql) of
+    case emysql:sqlquery(Sql) of
         {ok, Records} ->
             Records;
         {error, Reason}  ->
