@@ -79,6 +79,7 @@ init([]) ->
     ets:new(mit_dic_idmanu, [set, protected, named_table]),
     ets:new(mit_dic_tid2vid, [set, protected, named_table]),
     init_cache(),
+    io:format("finish start mit...~n",[]),
     {ok, state}.
 
 init_cache() ->

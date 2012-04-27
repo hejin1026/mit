@@ -119,6 +119,7 @@ init([]) ->
     mnesia:add_table_copy(entry, node(), ram_copies),
     emysql:delete(mit_devices_changed),
     erlang:send_after(120 * 1000, self(), sync_changes),
+    io:format("finish start mit...~n",[]),
     {ok, state}.
 
 

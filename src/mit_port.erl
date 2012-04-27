@@ -97,7 +97,7 @@ get_notify_entry(Port) ->
     {value, PortIndex} = dataset:get_value(port_index, Port),
     {value, DevId} = dataset:get_value(device_id, Port),
     {value, DevType} = dataset:get_value(device_type, Port),
-    DevUid = mit:uid(DevType, DevId),
+    DevUid = mit_util:uid(DevType, DevId),
     Port2 = lists:keydelete(device_type, 1, Port),
     case mit:lookup(id, to_binary(DevUid)) of
         {ok, #entry{dn = DevDn, type = olt, data = Olt}} ->
@@ -173,14 +173,15 @@ do_init([]) ->
 do_init([Port|Ports]) ->
     {value, DevId} = dataset:get_value(device_id, Port),
     {value, DevType} = dataset:get_value(device_type, Port),
-    DevUid = mit:uid(DevType, DevId),
+    DevUid = mit_util:uid(DevType, DevId),
     case mit:lookup(id, to_binary(DevUid)) of
         {ok, #entry{dn = DevDn}} ->
             {value, Id} = dataset:get_value(id, Port),
             {value, PortIndex} = dataset:get_value(port_index, Port),
             Rdn = "port=" ++ to_list(PortIndex),
             Dn = Rdn ++ "," ++ binary_to_list(DevDn),
-            mit:update(#entry{dn = to_binary(Dn), uid = mit:uid(port,Id), type = port, parent = mit:bdn(Dn), data = Port});
+            mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,Id),
+                type = port, parent = mit_util:bdn(Dn), data = Port});
         false -> ingore
     end,
     do_init(Ports).
@@ -251,14 +252,14 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 insert_port(Dn, Port) ->
-    Bdn = mit:bdn(Dn),
+    Bdn = mit_util:bdn(Dn),
     case mit:lookup(Bdn) of
         {ok, #entry{type = Type, data = Entry} = _} ->
             % ?INFO("info: insert port dn: ~p, entry: ~p", [Dn, Entry]),
             {value, Id} = dataset:get_value(id, Entry),
             {value, DeviceManu} = dataset:get_value(device_manu, Entry),
 	        {value, CityId} = dataset:get_value(cityid, Entry),
-            DevType = mit:get_type(Type),
+            DevType = mit_util:get_type(Type),
             DateTime = {datetime, calendar:local_time()},
 			PortInfo = [{device_type, DevType}, {device_id, Id},{device_manu,DeviceManu},
                          {created_at, DateTime}, {updated_at, DateTime},{cityid,CityId} | Port],
@@ -266,8 +267,8 @@ insert_port(Dn, Port) ->
                 {updated, {0, _}} ->
                     ?WARNING("cannot inserted port: ~p ~p", [Dn, Port]);
                 {updated, {1, PId}} ->
-                    mit:update(#entry{dn = to_binary(Dn), uid = mit:uid(port,PId), type = port,
-                        parent = mit:bdn(Dn), data = [{id, PId}|Port]});
+                    mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,PId), type = port,
+                        parent = mit_util:bdn(Dn), data = [{id, PId}|Port]});
                 {error, Reason} ->
                     ?WARNING("~p", [Reason])
             end;
@@ -276,7 +277,7 @@ insert_port(Dn, Port) ->
     end.
 
 update_port(Dn, OldAttrs, Attrs) ->
-    case mit:merge(Attrs, OldAttrs) of
+    case mit_util:merge(Attrs, OldAttrs) of
         {changed, MergedAttrs} ->
             {value, Id} = dataset:get_value(id, OldAttrs),
             % ?WARNING("info :update port: ~p, ~p", [Dn, MergedAttrs]),
@@ -285,7 +286,8 @@ update_port(Dn, OldAttrs, Attrs) ->
             MergedAttrs2 = lists:keydelete(means, 1, MergedAttrs1),
             case emysql:update(mit_ports, [{updated_at, Datetime} | MergedAttrs2], {id, Id}) of
                 {updated, {1, _Id}} -> %update mit cache
-                    mit:update(#entry{dn = Dn, uid = mit:uid(port,Id), type = port, parent = mit:bdn(Dn), data = MergedAttrs});
+                    mit:update(#entry{dn = Dn, uid = mit_util:uid(port,Id), type = port,
+                        parent = mit_util:bdn(Dn), data = MergedAttrs});
                 {updated, {0, _}} -> %stale port?
                     ?WARNING("stale port: ~p", [Dn]);
                 {error, Reason} ->

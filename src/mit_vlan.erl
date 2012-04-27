@@ -72,7 +72,7 @@ init([]) ->
             {value, OnuNo} = dataset:get_value(onu_no, Vlan),
             {value, GemNo} = dataset:get_value(gem_no, Vlan),
             {value, VlanType} = dataset:get_value(vlan_type, Vlan),
-            OltUid = mit:uid(olt, OltId),
+            OltUid = mit_util:uid(olt, OltId),
             case mit:lookup(id, to_binary(OltUid)) of
             {ok, #entry{dn = OltDn}} ->
                 {value, VlanId} = dataset:get_value(id, Vlan),
@@ -84,7 +84,7 @@ init([]) ->
                                         "slot=", SlotNo, ",",
                                         to_list(OltDn)]),
                 mit:update(#entry{dn = to_binary(VlanDn), uid = to_binary(VlanUid),
-                    type = vlan, parent = mit:bdn(VlanDn), data = Vlan});
+                    type = vlan, parent = mit_util:bdn(VlanDn), data = Vlan});
             false ->
                 io:format("cannot find olt: ~p", [OltId])
             end
@@ -142,20 +142,20 @@ code_change(_OldVsn, State, _Extra) ->
 
 update_vlan(Dn, OldAttrs, Attrs) ->
     %重新发现后可以知道gem
-    GemDn = mit:bdn(Dn),
+    GemDn = mit_util:bdn(Dn),
     NewAttrs = case get_gem_id(GemDn) of
         0 -> Attrs;
         Id -> [{gem_id, Id}|Attrs]
     end,
     ?INFO("update vlan, ~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, NewAttrs]),
-    case mit:merge(NewAttrs, OldAttrs) of
+    case mit_util:merge(NewAttrs, OldAttrs) of
         {changed, MergedAttrs} ->
             {value, VlanId} = dataset:get_value(id, OldAttrs),
             LastChanged = {datetime, calendar:local_time()},
             MergedAttrs2 = lists:keydelete(id, 1, MergedAttrs),
             case emysql:update(mit_vlans, [{updated_at, LastChanged} | MergedAttrs], {id, VlanId}) of
                 {updated, {1, _Id}} -> %update mit cache
-                    mit:update(#entry{dn = Dn, uid = mit:uid(vlan, VlanId), type = vlan, parent = mit:bdn(Dn),
+                    mit:update(#entry{dn = Dn, uid = mit_util:uid(vlan, VlanId), type = vlan, parent = mit_util:bdn(Dn),
                         data = [{id, VlanId}|MergedAttrs2]});
                 {updated, {0, _}} -> %stale port?
                     ?WARNING("stale port: ~p", [Dn]);
@@ -185,8 +185,8 @@ insert_vlan(Dn, Vlan) ->
         DateTime = {datetime, calendar:local_time()},
         case emysql:insert(mit_vlans, [{created_at, DateTime}, {updated_at, DateTime}, {olt_id, OltId},{gem_id, GemId} | Vlan]) of
             {updated, {1, Id}} ->
-                mit:update(#entry{dn = to_binary(Dn), uid = mit:uid(vlan, Id),
-                            type = vlan, parent = mit:bdn(Dn), data = [{id, Id}|Vlan]});
+                mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(vlan, Id),
+                            type = vlan, parent = mit_util:bdn(Dn), data = [{id, Id}|Vlan]});
             {error, Reason} ->
                 ?WARNING("~p", [Reason])
             end;

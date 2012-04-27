@@ -126,7 +126,7 @@ mem_attrs() ->
 
 
 get_entry(Onu) ->
-    mit:format(mit, mem_attrs(), Onu).
+    mit_util:format(mit, mem_attrs(), Onu).
 
 get_notify_entry(Onu) ->
     {value, OltId} = dataset:get_value(olt_id, Onu),
@@ -139,7 +139,7 @@ get_notify_entry(Onu) ->
             {value, OltVersion} = dataset:get_value(snmp_v, Olt, <<"v2c">>),
             {value, OltWriteCommunity} = dataset:get_value(snmp_w, Olt, <<"private">>),
             OltAttrs =  [{oltip, OltIp},{olt_snmp_r, OltCommunity},{olt_snmp_v, OltVersion}, {olt_snmp_w, OltWriteCommunity}],
-            Attrs = mit:format(notify, attrs(), Onu),
+            Attrs = mit_util:format(notify, attrs(), Onu),
             OltAttrs ++ [{dn, Dn}|Attrs];
         false ->
             ?ERROR("no olt: ~p", [OltId]),
@@ -180,8 +180,8 @@ init([]) ->
                       {ok, #entry{data = Olt}} ->
                           {value, OltIp} = dataset:get_value(ip, Olt),
                           Dn = lists:concat(["onu=", to_list(Rdn), ",", "olt=", to_list(OltIp)]),
-                          mit:update(#entry{dn = to_binary(Dn), uid = mit:uid(onu,Id), type = onu,
-                              parent = mit:bdn(Dn), data = Onu});
+                          mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id), type = onu,
+                              parent = mit_util:bdn(Dn), data = Onu});
                       false ->
                           ?INFO("cannot find olt: ~p ~n", [OltId])
                   end
@@ -262,7 +262,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 update_onu(Dn, OldAttrs, Attrs) ->
     %?INFO("update onu,dn:~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, Attrs]),
-    case mit:merge(Attrs, OldAttrs) of
+    case mit_util:merge(Attrs, OldAttrs) of
         {changed, MergedAttrs} ->
            % ?WARNING("update onu dn:~p,newattr: ~p ~n,result : ~p", [Dn, Attrs, MergedAttrs]),
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
@@ -270,7 +270,7 @@ update_onu(Dn, OldAttrs, Attrs) ->
             Datetime = {datetime, calendar:local_time()},
             case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
                 {updated, {1, _Id}} -> %update mit cache
-                    mit:update(#entry{dn = Dn, uid = mit:uid(onu,Id), type = onu, parent = mit:bdn(Dn), data = MergedAttrs});
+                    mit:update(#entry{dn = Dn, uid = mit_util:uid(onu,Id), type = onu, parent = mit_util:bdn(Dn), data = MergedAttrs});
                 {updated, {0, _Id}} -> %stale onu?
                     ?WARNING("stale onu: ~p,~p", [Dn, Id]);
                 {error, Reason} ->
@@ -281,7 +281,7 @@ update_onu(Dn, OldAttrs, Attrs) ->
     end.
 
 insert_onu(Dn, Onu) ->
-    case mit:lookup(mit:bdn(Dn)) of
+    case mit:lookup(mit_util:bdn(Dn)) of
         {ok, #entry{data = Olt, type = olt}} ->
             {value, OltId} = dataset:get_value(id, Olt),
             {value, CityId} = dataset:get_value(cityid, Olt),
@@ -293,7 +293,7 @@ insert_onu(Dn, Onu) ->
                 {created_at, Now}, {updated_at, Now}|Onu]) of
                 {updated, {1, Id}} ->
                %     ?INFO("insert onu dn:~p,result: ~p", [Dn, Onu]),
-                    mit:update(#entry{dn = to_binary(Dn), uid = mit:uid(onu,Id), type = onu, parent = mit:bdn(Dn),
+                    mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id), type = onu, parent = mit_util:bdn(Dn),
                         data = [{id, Id}|Onu]});
                 {updated, {0, _}} ->
                     ?WARNING("cannot find inserted onu: ~p ~p", [Dn, Onu]);
@@ -305,7 +305,7 @@ insert_onu(Dn, Onu) ->
         {ok, #entry{type = Type}} ->
             ?ERROR("cannot find :~p to olt: ~p", [Type, Dn]);
         false ->
-            ?ERROR("cannot find olt: ~p", [mit:bdn(Dn)])
+            ?ERROR("cannot find olt: ~p", [Dn])
     end.
 
 transform(Attrs) ->

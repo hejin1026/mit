@@ -72,7 +72,7 @@ do_init() ->
             {value, Id} = dataset:get_value(id, Splite),
             {value, ParentId} = dataset:get_value(parent_split, Splite, null),
             {value, PonId} = dataset:get_value(pon_id, Splite, null),
-            SpliteUid = mit:uid(splite, Id),
+            SpliteUid = mit_util:uid(splite, Id),
             case mit:lookup(id, to_binary("port:" ++ to_list(PonId))) of
                 {ok, #entry{dn = PonDn}} ->
                     SpliteDn = "splite=" ++ to_list(Id) ++ "," ++  to_list(PonDn),
@@ -80,7 +80,7 @@ do_init() ->
                         null ->
 %                            ?INFO("level 1 splite :~p, ~p", [SpliteDn, Splite]),
                             mit:update(#entry{dn = to_binary(SpliteDn), uid = SpliteUid,
-                                type = splite, parent = mit:bdn(SpliteDn), data = Splite});
+                                type = splite, parent = mit_util:bdn(SpliteDn), data = Splite});
                         _ ->
                             ParentDn = "splite=" ++ to_list(ParentId) ++ "," ++ to_list(PonDn),
                             mit:update(#entry{dn = to_binary(SpliteDn), uid = SpliteUid,

@@ -4,16 +4,7 @@
 
 -behavior(application).
 
--export([start/0, stop/0]).
-
 -export([start/2, stop/1]).
-
-start() ->
-    application:start(mit).
-
-stop() ->
-    application:stop(mit).
-
 
 start(normal, _Args) ->
 	{ok, SupPid} = mit_sup:start_link(),
