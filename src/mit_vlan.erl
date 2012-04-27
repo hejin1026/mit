@@ -63,7 +63,7 @@ update(Dn, Attrs) ->
     gen_server:cast(?MODULE, {update, Dn, Attrs}).
 
 init([]) ->
-    case mysql:select(mit_vlans, attrs()) of
+    case emysql:select(mit_vlans, attrs()) of
     {ok, Vlans} ->
         lists:foreach(fun(Vlan) ->
             {value, OltId} = dataset:get_value(olt_id, Vlan),
@@ -153,7 +153,7 @@ update_vlan(Dn, OldAttrs, Attrs) ->
             {value, VlanId} = dataset:get_value(id, OldAttrs),
             LastChanged = {datetime, calendar:local_time()},
             MergedAttrs2 = lists:keydelete(id, 1, MergedAttrs),
-            case mysql:update(mit_vlans, [{updated_at, LastChanged} | MergedAttrs], {id, VlanId}) of
+            case emysql:update(mit_vlans, [{updated_at, LastChanged} | MergedAttrs], {id, VlanId}) of
                 {updated, {1, _Id}} -> %update mit cache
                     mit:update(#entry{dn = Dn, uid = mit:uid(vlan, VlanId), type = vlan, parent = mit:bdn(Dn),
                         data = [{id, VlanId}|MergedAttrs2]});
@@ -183,7 +183,7 @@ insert_vlan(Dn, Vlan) ->
                                 to_list(OltDn)]),
         GemId = get_gem_id(GemDn),
         DateTime = {datetime, calendar:local_time()},
-        case mysql:insert(mit_vlans, [{created_at, DateTime}, {updated_at, DateTime}, {olt_id, OltId},{gem_id, GemId} | Vlan]) of
+        case emysql:insert(mit_vlans, [{created_at, DateTime}, {updated_at, DateTime}, {olt_id, OltId},{gem_id, GemId} | Vlan]) of
             {updated, {1, Id}} ->
                 mit:update(#entry{dn = to_binary(Dn), uid = mit:uid(vlan, Id),
                             type = vlan, parent = mit:bdn(Dn), data = [{id, Id}|Vlan]});

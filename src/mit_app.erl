@@ -17,7 +17,7 @@ stop() ->
 
 start(normal, _Args) ->
 	{ok, SupPid} = mit_sup:start_link(),
-	{ok, SupPid}.	
+	SupPid.	
 
 stop(_) ->
 	ok.

@@ -72,7 +72,7 @@ update(Dn, Attrs) ->
     gen_server:cast(?MODULE, {update, Dn, Attrs}).
 
 init([]) ->
-    case mysql:select(mit_gems, attrs()) of
+    case emysql:select(mit_gems, attrs()) of
     {ok, Gems} ->
         lists:foreach(fun(Gem) ->
             {value, GemNo} = dataset:get_value(gem_no, Gem),
@@ -160,7 +160,7 @@ update_gem(Dn, OldAttrs, Attrs) ->
             {value, GemId} = dataset:get_value(id, OldAttrs, -1),
             LastChanged = {datetime, calendar:local_time()},
             MergedAttrs2 = lists:keydelete(id, 1, MergedAttrs),
-            case mysql:update(mit_gems, [{updated_at, LastChanged} | MergedAttrs2], {id, GemId}) of
+            case emysql:update(mit_gems, [{updated_at, LastChanged} | MergedAttrs2], {id, GemId}) of
                 {updated, {1, _Id}} -> %update mit cache
                     mit:update(#entry{dn = Dn, uid = mit:uid(gem, GemId), type = gem, parent = mit:bdn(Dn), data = MergedAttrs});
                 {updated, {0, _Id}} -> %stale port?
@@ -183,7 +183,7 @@ insert_gem(Dn, Gem) ->
         {value, OltId} = dataset:get_value(id, Olt),
         OnuId = get_onu_id(OltDn, SlotNo, PortNo, OnuNo),
         DateTime = {datetime, calendar:local_time()},
-        case mysql:insert(mit_gems, [{created_at, DateTime}, {updated_at, DateTime}, {olt_id, OltId}, {onu_id, OnuId} | Gem]) of
+        case emysql:insert(mit_gems, [{created_at, DateTime}, {updated_at, DateTime}, {olt_id, OltId}, {onu_id, OnuId} | Gem]) of
             {updated, {1, Id}} ->
                 mit:update(#entry{dn = to_binary(Dn), uid = mit:uid(gem, Id), type = gem, parent = mit:bdn(Dn),
                     data = [{id, Id}|Gem]});

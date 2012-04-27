@@ -66,7 +66,7 @@ init([]) ->
 
 
 do_init() ->
-    case mysql:select(mit_splites, attrs()) of
+    case emysql:select(mit_splites, attrs()) of
     {ok, Splites} ->
         lists:foreach(fun(Splite) ->
             {value, Id} = dataset:get_value(id, Splite),

@@ -70,7 +70,7 @@ redisco() ->
     get_data(Sql).
 
 get_data(Sql) ->
-    case mysql:sql_query(Sql) of
+    case emysql:sql_query(Sql) of
         {ok, Records} ->
             Records;
         {error, Reason}  ->
@@ -140,7 +140,7 @@ update(Dn, Attrs) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    case mysql:select(mit_olts, mem_attrs()) of
+    case emysql:select(mit_olts, mem_attrs()) of
         {ok, Olts} ->
             lists:foreach(fun(Olt) ->
                 {value, Id} = dataset:get_value(id, Olt),
@@ -222,7 +222,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 insert_olt(Dn, Olt) ->
     CreatedAt = {datetime, calendar:local_time()},
-    case mysql:insert(mit_olts, [{created_at, CreatedAt}|Olt]) of
+    case emysql:insert(mit_olts, [{created_at, CreatedAt}|Olt]) of
     {updated, {1, Id}} ->
         mit:update(#entry{dn = to_binary(Dn), uid = mit:uid(olt,Id), type = olt, data = [{id, Id}|Olt]});
     {updated, {0, _}} ->
@@ -240,7 +240,7 @@ update_olt(Dn, OldAttrs, Attrs) ->
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             Datetime = {datetime, calendar:local_time()},
-            case mysql:update(mit_olts, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
+            case emysql:update(mit_olts, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
             {updated, {1, _Id}} -> %update mit cache
                 mit:update(#entry{dn = Dn, uid = mit:uid(olt,Id), type = olt, parent = mit:bdn(Dn), data = MergedAttrs});
             {updated, {0, _Id}} ->

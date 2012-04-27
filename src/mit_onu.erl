@@ -72,7 +72,7 @@ redisco() ->
     get_data(Sql).
 
 get_data(Sql) ->
-    case mysql:sql_query(Sql) of
+    case emysql:sql_query(Sql) of
         {ok, Records} ->
             Records;
         {error, Reason}  ->
@@ -169,7 +169,7 @@ update(Dn, Attrs) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    case mysql:select(mit_onus, mem_attrs()) of
+    case emysql:select(mit_onus, mem_attrs()) of
         {ok, Onus} ->
             lists:foreach(fun(Onu) ->
 	              % io:format("I want look at onu: ~p ~n", [Onu]),
@@ -268,7 +268,7 @@ update_onu(Dn, OldAttrs, Attrs) ->
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             Datetime = {datetime, calendar:local_time()},
-            case mysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
+            case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
                 {updated, {1, _Id}} -> %update mit cache
                     mit:update(#entry{dn = Dn, uid = mit:uid(onu,Id), type = onu, parent = mit:bdn(Dn), data = MergedAttrs});
                 {updated, {0, _Id}} -> %stale onu?
@@ -288,7 +288,7 @@ insert_onu(Dn, Onu) ->
             {value, DeviceName} = dataset:get_value(device_name, Onu,""),
             ?INFO("insert onu: ~p", [Dn]),
             Now = {datetime, calendar:local_time()},
-            case mysql:insert(mit_onus, [{name,DeviceName},
+            case emysql:insert(mit_onus, [{name,DeviceName},
                 {olt_id, OltId},{cityid, CityId},
                 {created_at, Now}, {updated_at, Now}|Onu]) of
                 {updated, {1, Id}} ->

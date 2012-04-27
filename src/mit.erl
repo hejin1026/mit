@@ -117,7 +117,7 @@ init([]) ->
         [{ram_copies, [node()]}, {index, [uid, parent]},
          {attributes, record_info(fields, entry)}]),
     mnesia:add_table_copy(entry, node(), ram_copies),
-    mysql:delete(mit_devices_changed),
+    emysql:delete(mit_devices_changed),
     erlang:send_after(120 * 1000, self(), sync_changes),
     {ok, state}.
 
@@ -133,7 +133,7 @@ handle_cast(_Msg, State) ->
     {noreply, State}.
 
 handle_info(sync_changes, State) ->
-	case mysql:select(mit_devices_changed) of
+	case emysql:select(mit_devices_changed) of
     {ok, ChangedLogs} ->
         lists:foreach(fun(ChangedLog) ->
             ?ERROR("sync_change: ~p ", [ChangedLog]),
@@ -142,7 +142,7 @@ handle_info(sync_changes, State) ->
             {value, DevType} = dataset:get_value(device_type, ChangedLog),
             {value, Oper} = dataset:get_value(oper_type, ChangedLog),
             try handle_change(Oper, {mit_util:get_type(DevType), DevId}, ChangedLog) of
-                _ -> mysql:delete(mit_devices_changed, {id, Id})
+                _ -> emysql:delete(mit_devices_changed, {id, Id})
             catch
                 _:Ex -> ?ERROR("~p, ~p", [Ex, erlang:get_stacktrace()])
             end

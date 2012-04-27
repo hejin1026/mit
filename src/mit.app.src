@@ -3,6 +3,6 @@
   {vsn, "0.1.0"},
   {modules, []},
   {registered, [mit]},
-  {applications, [kernel, stdlib, master]},
+  {applications, [kernel, stdlib]},
   {env, []},
   {mod, {mit_app, []}}]}.

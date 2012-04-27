@@ -56,7 +56,7 @@ update(Dn, Attrs) ->
     gen_server:cast(?MODULE, {update, Dn, Attrs}).
 
 init([]) ->
-    case mysql:sql_query("select * from fault_events where 
+    case emysql:sql_query("select * from fault_events where
         (alarm_name = 'hwolteponlumlost' or alarm_name = 'hwAlarmonusingledown') and alarm_state <> 3  ") of
     {ok, Faults} ->
         lists:foreach(fun(Fault) ->
@@ -125,7 +125,7 @@ handle_info(clean, State) ->
         Entries = mnesia:match_object({entry, '_', '_', '_', fiber, '_'}),
         [mnesia:delete_object(Entry) || Entry <- Entries]
     end),
-    case mysql:sql_query("select * from fault_events where
+    case emysql:sql_query("select * from fault_events where
         (alarm_name = 'hwolteponlumlost' or alarm_name = 'hwAlarmonusingledown') and alarm_state <> 3  ") of
     {ok, Faults} ->
         lists:foreach(fun(Fault) ->

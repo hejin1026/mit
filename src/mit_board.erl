@@ -98,7 +98,7 @@ init([]) ->
     end.
 
 do_init() ->
-    {ok, Boards} = mysql:select(mit_boards, attrs()),
+    {ok, Boards} = emysql:select(mit_boards, attrs()),
     lists:foreach(fun(Board) ->
         {value, DevId} = dataset:get_value(device_id, Board),
         {value, DevType} = dataset:get_value(device_type, Board),
@@ -194,7 +194,7 @@ insert_board(Dn, Board) ->
         DeviceType = mit:get_type(Type),
         BoardInfo = [{device_type, DeviceType}, {device_id, Id},{device_manu,DeviceManu},
                 {created_at, DateTime}, {updated_at, DateTime},{cityid,CityId} | Board],
-        case mysql:insert(mit_boards, BoardInfo) of
+        case emysql:insert(mit_boards, BoardInfo) of
         {updated,{1,Bid}} ->
                 Uid = "slot:" ++ integer_to_list(Bid),
                 mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit:bdn(Dn), data = BoardInfo});
@@ -214,7 +214,7 @@ update_board(Dn, OldAttrs, Attrs) ->
         {value, Id} = dataset:get_value(id, OldAttrs),
         Datetime = {datetime, calendar:local_time()},
         MergedAttrs2 = lists:keydelete(id, 1, MergedAttrs),
-        case mysql:update(mit_boards, [{updated_at, Datetime} | MergedAttrs2], {id, Id}) of
+        case emysql:update(mit_boards, [{updated_at, Datetime} | MergedAttrs2], {id, Id}) of
         {updated, {1, _Id}} -> %update mit cache
             Uid = "slot:" ++ integer_to_list(Id),
             mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit:bdn(Dn), data = MergedAttrs});

@@ -54,7 +54,7 @@ stop() ->
 all_monet() ->
     Sql = "select t2.means as means, t1.*   from mit_ports t1 LEFT join collect_means t2 on
         (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.port_category in (1,2)",
-    case mysql:sql_query(Sql) of
+    case emysql:sql_query(Sql) of
         {ok, Records} ->
             Records;
         {error, Reason}  ->
@@ -66,7 +66,7 @@ one(Id) ->
     Sql = "select t2.means as means, t1.*   from mit_ports t1 LEFT join collect_means t2 on
         (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.port_category in (1,2)" ++
         "and t1.id = " ++ to_list(Id),
-    case mysql:sql_query(Sql) of
+    case emysql:sql_query(Sql) of
         {ok, Records} ->
             Records;
         {error, Reason}  ->
@@ -164,7 +164,7 @@ init([]) ->
     end.
 
 do_init() ->
-    {ok, Ports} = mysql:select(mit_ports, mem_attrs()),
+    {ok, Ports} = emysql:select(mit_ports, mem_attrs()),
     do_init(Ports),
     {ok, state}.
 
@@ -262,7 +262,7 @@ insert_port(Dn, Port) ->
             DateTime = {datetime, calendar:local_time()},
 			PortInfo = [{device_type, DevType}, {device_id, Id},{device_manu,DeviceManu},
                          {created_at, DateTime}, {updated_at, DateTime},{cityid,CityId} | Port],
-            case mysql:insert(mit_ports, PortInfo) of
+            case emysql:insert(mit_ports, PortInfo) of
                 {updated, {0, _}} ->
                     ?WARNING("cannot inserted port: ~p ~p", [Dn, Port]);
                 {updated, {1, PId}} ->
@@ -283,7 +283,7 @@ update_port(Dn, OldAttrs, Attrs) ->
             Datetime = {datetime, calendar:local_time()},
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             MergedAttrs2 = lists:keydelete(means, 1, MergedAttrs1),
-            case mysql:update(mit_ports, [{updated_at, Datetime} | MergedAttrs2], {id, Id}) of
+            case emysql:update(mit_ports, [{updated_at, Datetime} | MergedAttrs2], {id, Id}) of
                 {updated, {1, _Id}} -> %update mit cache
                     mit:update(#entry{dn = Dn, uid = mit:uid(port,Id), type = port, parent = mit:bdn(Dn), data = MergedAttrs});
                 {updated, {0, _}} -> %stale port?
