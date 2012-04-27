@@ -83,7 +83,7 @@ lookup(id, Uid) ->
     end.
 
 update(AtomType, Dn, Id, Data) ->
-    Entry = #entry{dn = Dn, uid = mit_util:uid(AtomType, Id), parent = mit:bdn(Dn),
+    Entry = #entry{dn = Dn, uid = mit_util:uid(AtomType, Id), parent = mit_util:bdn(Dn),
                 type = AtomType, data = mit_util:mit_entry(AtomType, Data)},
     update(Entry).
 

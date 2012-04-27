@@ -157,6 +157,7 @@ update(Dn, Attrs) ->
 init([]) ->
     case  do_init() of
         {ok, State} ->
+            io:format("finish start mit port...~n",[]),
             {ok, State};
         {error, Reason} ->
             ?ERROR("mit_port start failure...",[]),

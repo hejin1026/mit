@@ -68,7 +68,7 @@ init([]) ->
                 Uid = get_uid(PortType, PortId),
                 Dn = "fiber," ++ to_list(AlarmSource),
                 Data = [{oper_state, 0}, {device_id, PortId}, {device_type, PortType}],
-                mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Uid), type = fiber, parent = mit:bdn(Dn), data = Data});
+                mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Uid), type = fiber, parent = mit_util:bdn(Dn), data = Data});
             false ->
                 io:format("cannot find device: ~p ~n,~p", [PortId, AlarmSource])
             end
@@ -138,7 +138,7 @@ handle_info(clean, State) ->
                 Dn = "fiber," ++ to_list(AlarmSource),
                 Data = [{oper_state, 0}, {device_id, DeviceId}, {device_type, DeviceType}],
                 ?INFO("mit fiber :~p,~p",[Dn, Data]),
-                mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Uid), type = fiber, parent = mit:bdn(Dn), data = Data});
+                mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Uid), type = fiber, parent = mit_util:bdn(Dn), data = Data});
             false ->
                 io:format("cannot find device: ~p ~n,~p", [DeviceId, AlarmSource])
             end
@@ -164,7 +164,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 update_fiber(Dn, OldAttrs, Attrs) ->
     ?INFO("update fiber, oldattr: ~p, newattr: ~p", [OldAttrs, Attrs]),
-    case mit:merge(Attrs, OldAttrs) of
+    case mit_util:merge(Attrs, OldAttrs) of
         {changed, MergedAttrs} ->
             {value, DeviceId} = dataset:get_value(device_id, MergedAttrs),
             {value, DeviceType} = dataset:get_value(device_type, MergedAttrs),
@@ -175,7 +175,7 @@ update_fiber(Dn, OldAttrs, Attrs) ->
     end.
 
 insert_fiber(Dn, Fiber) ->
-    case mit:lookup(mit:bdn(Dn)) of
+    case mit:lookup(mit_util:bdn(Dn)) of
     {ok, #entry{data = _Device} = _} ->
         ?INFO("insert fiber: ~p", [Dn]),
         {value, DeviceId} = dataset:get_value(device_id, Fiber),
@@ -183,7 +183,7 @@ insert_fiber(Dn, Fiber) ->
         Uid = get_uid(DeviceType, DeviceId),
         mit:update(#entry{dn = Dn, uid = to_binary(Uid), type = fiber, data = Fiber});
     false ->
-        ?WARNING("cannot find device: ~p", [mit:bdn(Dn)])
+        ?WARNING("cannot find device: ~p", [Dn])
     end.
 
 get_uid(DeviceType, DeviceId) ->

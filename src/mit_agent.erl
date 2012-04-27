@@ -35,6 +35,7 @@ start_link() ->
 init([]) ->
     {ok, Conn} = amqp:connect(),
     Channel = open(Conn),
+    io:format("finish start mit agent...~n",[]),
     {ok, #state{channel = Channel}}.
 
 open(Conn) ->

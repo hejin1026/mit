@@ -80,7 +80,7 @@ init([]) ->
             {value, PortNo} = dataset:get_value(port_no, Gem),
             {value, OnuNo} = dataset:get_value(onu_no, Gem),
             {value, OltId} = dataset:get_value(olt_id, Gem),
-            OltUid = mit:uid(olt, OltId),
+            OltUid = mit_util:uid(olt, OltId),
             case mit:lookup(id, to_binary(OltUid)) of
             {ok, #entry{dn = OltDn}} ->
                 {value, GemId} = dataset:get_value(id, Gem),
@@ -89,7 +89,7 @@ init([]) ->
                                        "port=", PortNo, ",",
                                        "slot=", SlotNo, ",",
                                        to_list(OltDn)]),
-                mit:update(#entry{dn = to_binary(GemDn), uid = mit:uid(gem, GemId), type = gem, parent = mit:bdn(GemDn), data = Gem});
+                mit:update(#entry{dn = to_binary(GemDn), uid = mit_util:uid(gem, GemId), type = gem, parent = mit_util:bdn(GemDn), data = Gem});
             false ->
                 io:format("cannot find olt: ~p", [OltId])
             end
@@ -154,7 +154,7 @@ update_gem(Dn, OldAttrs, Attrs) ->
         Id -> [{onu_id, Id}|Attrs]
     end,
     ?INFO("update gem, oldattr: ~p, newattr: ~p", [OldAttrs, NewAttrs]),
-    case mit:merge(NewAttrs, OldAttrs) of
+    case mit_util:merge(NewAttrs, OldAttrs) of
         {changed, MergedAttrs} ->
             ?INFO("update gem, mergeattr: ~p", [MergedAttrs]),
             {value, GemId} = dataset:get_value(id, OldAttrs, -1),
@@ -162,7 +162,7 @@ update_gem(Dn, OldAttrs, Attrs) ->
             MergedAttrs2 = lists:keydelete(id, 1, MergedAttrs),
             case emysql:update(mit_gems, [{updated_at, LastChanged} | MergedAttrs2], {id, GemId}) of
                 {updated, {1, _Id}} -> %update mit cache
-                    mit:update(#entry{dn = Dn, uid = mit:uid(gem, GemId), type = gem, parent = mit:bdn(Dn), data = MergedAttrs});
+                    mit:update(#entry{dn = Dn, uid = mit_util:uid(gem, GemId), type = gem, parent = mit_util:bdn(Dn), data = MergedAttrs});
                 {updated, {0, _Id}} -> %stale port?
                     ?WARNING("stale port: ~p", [Dn]);
                 {error, Reason} ->
@@ -185,7 +185,7 @@ insert_gem(Dn, Gem) ->
         DateTime = {datetime, calendar:local_time()},
         case emysql:insert(mit_gems, [{created_at, DateTime}, {updated_at, DateTime}, {olt_id, OltId}, {onu_id, OnuId} | Gem]) of
             {updated, {1, Id}} ->
-                mit:update(#entry{dn = to_binary(Dn), uid = mit:uid(gem, Id), type = gem, parent = mit:bdn(Dn),
+                mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(gem, Id), type = gem, parent = mit_util:bdn(Dn),
                     data = [{id, Id}|Gem]});
             {error, Reason} ->
                 ?WARNING("~p", [Reason])

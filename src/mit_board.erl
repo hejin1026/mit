@@ -88,6 +88,7 @@ update(Dn, Attrs) ->
 init([]) ->
     case catch do_init() of
     {ok, State} ->
+        io:format("finish start mit board...~n",[]),
         {ok, State};
     {error, Reason} ->
         ?ERROR("start failure...",[]),
@@ -102,7 +103,7 @@ do_init() ->
     lists:foreach(fun(Board) ->
         {value, DevId} = dataset:get_value(device_id, Board),
         {value, DevType} = dataset:get_value(device_type, Board),
-        Uid = mit:uid(mit:get_type(DevType), DevId),
+        Uid = mit_util:uid(mit_util:get_type(DevType), DevId),
         case mit:lookup(id, Uid) of
         {ok, #entry{dn=Bdn} = _} ->
 			{value, Id} = dataset:get_value(id, Board),
@@ -183,7 +184,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 insert_board(Dn, Board) ->
-    Bdn = mit:bdn(Dn),
+    Bdn = mit_util:bdn(Dn),
     case mit:lookup(Bdn) of
     {ok, #entry{data = Entry, type = Type} = _} ->
         {value, Id} = dataset:get_value(id, Entry),
@@ -191,13 +192,13 @@ insert_board(Dn, Board) ->
         {value, DeviceManu} = dataset:get_value(device_manu, Entry),
         DateTime = {datetime, calendar:local_time()},
         % ?INFO("insert_board: ~p", [Dn]),
-        DeviceType = mit:get_type(Type),
+        DeviceType = mit_util:get_type(Type),
         BoardInfo = [{device_type, DeviceType}, {device_id, Id},{device_manu,DeviceManu},
                 {created_at, DateTime}, {updated_at, DateTime},{cityid,CityId} | Board],
         case emysql:insert(mit_boards, BoardInfo) of
         {updated,{1,Bid}} ->
                 Uid = "slot:" ++ integer_to_list(Bid),
-                mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit:bdn(Dn), data = BoardInfo});
+                mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = BoardInfo});
 		{updated, {0, _}} -> %stale board?
 	            ?WARNING("stale board: ~p,~p", [Dn,BoardInfo]);
         {error, Reason} ->
@@ -208,7 +209,7 @@ insert_board(Dn, Board) ->
     end.
 
 update_board(Dn, OldAttrs, Attrs) ->
-    case mit:merge(Attrs, OldAttrs) of
+    case mit_util:merge(Attrs, OldAttrs) of
     {changed, MergedAttrs} ->
         % ?INFO("update_board: ~p", [Dn]),
         {value, Id} = dataset:get_value(id, OldAttrs),
@@ -217,7 +218,7 @@ update_board(Dn, OldAttrs, Attrs) ->
         case emysql:update(mit_boards, [{updated_at, Datetime} | MergedAttrs2], {id, Id}) of
         {updated, {1, _Id}} -> %update mit cache
             Uid = "slot:" ++ integer_to_list(Id),
-            mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit:bdn(Dn), data = MergedAttrs});
+            mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = MergedAttrs});
         {updated, {0, _}} -> %stale board?
             ?WARNING("stale board: ~p", [Dn]);
             %mit:delete(Dn);
