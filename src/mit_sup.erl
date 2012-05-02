@@ -16,6 +16,9 @@ init([]) ->
     Mit = {mit, {mit, start_link, []},
 			permanent, 10, worker, [mit]},
 
+    Mit = {mit_agent, {mit_agent, start_link, []},
+			permanent, 10, worker, [mit_agent]},
+
 	Dict = {mit_dict, {mit_dict, start_link, []},
 		permanent, 10, worker, [mit_dict]},
 

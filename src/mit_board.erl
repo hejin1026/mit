@@ -112,7 +112,7 @@ do_init() ->
             Dn = Rdn ++ "," ++ to_list(Bdn),
             mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid), type = board, data = Board});
         false ->
-            ?INFO("cannot find the device of the board: ~p", [Board])
+            ignore
         end
     end, Boards),
     io:format("finish start board : ~p ~n", [length(Boards)]),
