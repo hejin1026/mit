@@ -63,7 +63,7 @@ update(Dn, Attrs) ->
     gen_server:cast(?MODULE, {update, Dn, Attrs}).
 
 init([]) ->
-    case emysql:select(mit_vlans, attrs()) of
+    case emysql:select({mit_vlans, attrs()}) of
     {ok, Vlans} ->
         lists:foreach(fun(Vlan) ->
             {value, OltId} = dataset:get_value(olt_id, Vlan),

@@ -98,7 +98,7 @@ init([]) ->
     end.
 
 do_init() ->
-    {ok, Boards} = emysql:select(mit_boards, attrs()),
+    {ok, Boards} = emysql:select({mit_boards, attrs()}),
     lists:foreach(fun(Board) ->
         {value, DevId} = dataset:get_value(device_id, Board),
         {value, DevType} = dataset:get_value(device_type, Board),

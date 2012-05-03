@@ -72,7 +72,7 @@ update(Dn, Attrs) ->
     gen_server:cast(?MODULE, {update, Dn, Attrs}).
 
 init([]) ->
-    case emysql:select(mit_gems, attrs()) of
+    case emysql:select({mit_gems, attrs()}) of
     {ok, Gems} ->
         lists:foreach(fun(Gem) ->
             {value, GemNo} = dataset:get_value(gem_no, Gem),

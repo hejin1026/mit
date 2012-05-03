@@ -83,8 +83,8 @@ init([]) ->
     {ok, state}.
 
 init_cache() ->
-	{ok, Types} = emysql:select(dic_device_types, [id, manufacturer_id, code_name]),
-    {ok, Manus} = emysql:select(dic_manufacturers, [id, code_name]),
+	{ok, Types} = emysql:select({dic_device_types, [id, manufacturer_id, code_name]}),
+    {ok, Manus} = emysql:select({dic_manufacturers, [id, code_name]}),
     store(mit_dic_tid2vid, Types),
     store(mit_dic_typeid, mit_dic_idtype, Types),
     store(mit_dic_manuid, mit_dic_idmanu, Manus),

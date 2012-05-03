@@ -168,7 +168,7 @@ update(Dn, Attrs) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    case emysql:select(mit_onus, mem_attrs()) of
+    case emysql:select({mit_onus, mem_attrs()}) of
         {ok, Onus} ->
             lists:foreach(fun(Onu) ->
 	              % io:format("I want look at onu: ~p ~n", [Onu]),
