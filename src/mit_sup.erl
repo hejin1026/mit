@@ -37,6 +37,9 @@ init([]) ->
     Port = {mit_port, {mit_port, start_link, []},
 		permanent, 10, worker, [mit_port]},
 
+	Splite = {mit_splite, {mit_splite, start_link, []},
+		permanent, 10, worker, [mit_splite]},
+
     Fiber = {mit_fiber, {mit_fiber, start_link, []},
 		permanent, 10, worker, [mit_fiber]},
 
@@ -49,4 +52,4 @@ init([]) ->
     Event = {mit_event, {mit_event, start_link, []},
 		permanent, 10, worker, [mit_event]},
 
-	{ok, {{one_for_one, 10, 10}, [Mit, Agent, Dict, Mgr, Olt, Onu, Board, Port, Fiber, Gem, Vlan, Event]}}.
+	{ok, {{one_for_one, 10, 10}, [Mit, Agent, Dict, Mgr, Olt, Onu, Board, Port,Splite, Fiber, Gem, Vlan, Event]}}.
