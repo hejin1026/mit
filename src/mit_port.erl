@@ -165,7 +165,7 @@ init([]) ->
     end.
 
 do_init() ->
-    {ok, Ports} = emysql:select(mit_ports, mem_attrs()),
+    {ok, Ports} = emysql:select({mit_ports, mem_attrs()}),
     do_init(Ports),
     {ok, state}.
 

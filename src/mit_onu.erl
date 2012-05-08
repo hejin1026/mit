@@ -142,7 +142,6 @@ get_notify_entry(Onu) ->
             Attrs = mit_util:format(notify, attrs(), Onu),
             OltAttrs ++ [{dn, Dn}|Attrs];
         false ->
-            ?ERROR("no olt: ~p", [OltId]),
             []
     end.
 
@@ -169,7 +168,7 @@ update(Dn, Attrs) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    case emysql:select(mit_onus, mem_attrs()) of
+    case emysql:select({mit_onus, mem_attrs()}) of
         {ok, Onus} ->
             lists:foreach(fun(Onu) ->
 	              % io:format("I want look at onu: ~p ~n", [Onu]),
@@ -183,7 +182,7 @@ init([]) ->
                           mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id), type = onu,
                               parent = mit_util:bdn(Dn), data = Onu});
                       false ->
-                          ?INFO("cannot find olt: ~p ~n", [OltId])
+                          ignore
                   end
           end, Onus),
           io:format("finish start onu : ~p ~n", [length(Onus)]),

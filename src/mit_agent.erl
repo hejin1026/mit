@@ -85,4 +85,29 @@ handle_data({entry, port, Dn, Attrs}) ->
 handle_data({entry, gem, Dn, Attrs}) ->
     mit_gem:add(Dn, Attrs);
 handle_data({entry, vlan, Dn, Attrs}) ->
-    mit_vlan:add(Dn, Attrs).
+    mit_vlan:add(Dn, Attrs);
+handle_data({hostinfo, HostInfo}) ->
+    handle_hostinfo(HostInfo).
+
+
+handle_hostinfo(HostInfo) ->
+    DateTime = {datetime, {date(), time()}},
+    {value, JID} = dataset:get_value(jid, HostInfo),
+    case emysql:select({servers, {jid, JID}}) of
+        {ok, [_Record|_]} ->
+            case emysql:update(servers, [{updated_at, DateTime} | HostInfo], {jid, JID}) of
+                {error, Reason} ->
+                    ?ERROR("insert host  :~p, ~n Reason: ~p", [HostInfo, Reason]);
+                _ ->
+                    ok
+             end;
+        {ok, []} ->
+            case emysql:insert(servers, [{created_at, DateTime} | HostInfo]) of
+                {error, Reason} ->
+                    ?ERROR("insert host  :~p, ~n Reason: ~p", [HostInfo, Reason]);
+                _ ->
+                    ok
+            end;
+        {error, Reason} ->
+            ?ERROR("~p",[Reason])
+    end.

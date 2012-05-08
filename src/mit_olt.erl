@@ -140,7 +140,7 @@ update(Dn, Attrs) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    case emysql:select(mit_olts, mem_attrs()) of
+    case emysql:select({mit_olts, mem_attrs()}) of
         {ok, Olts} ->
             lists:foreach(fun(Olt) ->
                 {value, Id} = dataset:get_value(id, Olt),

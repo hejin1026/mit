@@ -98,7 +98,7 @@ init([]) ->
     end.
 
 do_init() ->
-    {ok, Boards} = emysql:select(mit_boards, attrs()),
+    {ok, Boards} = emysql:select({mit_boards, attrs()}),
     lists:foreach(fun(Board) ->
         {value, DevId} = dataset:get_value(device_id, Board),
         {value, DevType} = dataset:get_value(device_type, Board),
@@ -112,7 +112,7 @@ do_init() ->
             Dn = Rdn ++ "," ++ to_list(Bdn),
             mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid), type = board, data = Board});
         false ->
-            ?INFO("cannot find the device of the board: ~p", [Board])
+            ignore
         end
     end, Boards),
     io:format("finish start board : ~p ~n", [length(Boards)]),

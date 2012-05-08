@@ -16,6 +16,9 @@ init([]) ->
     Mit = {mit, {mit, start_link, []},
 			permanent, 10, worker, [mit]},
 
+    Agent = {mit_agent, {mit_agent, start_link, []},
+			permanent, 10, worker, [mit_agent]},
+
 	Dict = {mit_dict, {mit_dict, start_link, []},
 		permanent, 10, worker, [mit_dict]},
 
@@ -49,4 +52,4 @@ init([]) ->
     Event = {mit_event, {mit_event, start_link, []},
 		permanent, 10, worker, [mit_event]},
 
-	{ok, {{one_for_one, 10, 10}, [Mit, Dict, Mgr, Olt, Onu, Board, Port,Splite, Fiber, Gem, Vlan, Event]}}.
+	{ok, {{one_for_one, 10, 10}, [Mit, Agent, Dict, Mgr, Olt, Onu, Board, Port,Splite, Fiber, Gem, Vlan, Event]}}.
