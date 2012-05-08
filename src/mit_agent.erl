@@ -71,8 +71,8 @@ code_change(_OldVsn, State, _Extra) ->
 handle_datalist(DataList) when is_list(DataList) ->
     ?INFO("get disco data :~p",[DataList]),
 	lists:foreach(fun(Data) -> handle_data(Data) end, DataList);
-handle_datalist(DataList)  ->
-    ?WARNING("unexpected datalist: ~p", [DataList]).
+handle_datalist(Data)  ->
+    handle_data(Data).
 
 handle_data({entry, olt, Dn, Attrs}) ->
     mit_olt:add(Dn, Attrs);

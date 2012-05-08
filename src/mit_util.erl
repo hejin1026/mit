@@ -112,9 +112,14 @@ format(notify, [device_type|Attrs], Entry, Data) ->
 	{value, Device_type} = dataset:get_value(device_type, Entry),
     format(notify, Attrs, Entry, [{device_type, extbif:to_atom(Device_type)}|Data]);
 format(notify, [device_kind|Attrs], Entry, Data) ->
-	{value, TypeId} = dataset:get_value(device_kind, Entry),
-    Type =  mit_dict:lookup(type, TypeId),
-    format(notify, Attrs, Entry, [{type, Type}, {device_kind, TypeId}|Data]);
+	case dataset:get_value(device_kind, Entry) of
+        {value, TypeId} ->
+            Type =  mit_dict:lookup(type, TypeId),
+            format(notify, Attrs, Entry, [{type, Type}, {device_kind, TypeId}|Data]);
+        {false, _} ->
+            format(notify, Attrs, Entry, Data)
+     end;
+         
 format(notify, [olt_state|Attrs], Entry, Data) ->
     {value, Value} = dataset:get_value(olt_state, Entry),
     format(notify, Attrs, Entry, [{oper_state, Value}|Data]);
@@ -126,8 +131,8 @@ format(notify, [device_manu|Attrs], Entry, Data) ->
     Vendor =  mit_dict:lookup(vendor, VendorId),
     format(notify, Attrs, Entry, [{vendor, Vendor}, {device_manu, VendorId}|Data]);
 format(Type, [Item|Attrs], Entry, Data) ->
-	case dataset:get_value(Item, Entry, false) of
-		{value, <<"false">>} ->
+	case dataset:get_value(Item, Entry) of
+		{false, _} ->
 			format(Type, Attrs, Entry, Data);
 		{value, Value} ->
 			format(Type, Attrs, Entry, [{Item, Value}|Data])
