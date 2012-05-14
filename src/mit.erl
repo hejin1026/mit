@@ -182,9 +182,9 @@ handle_change(?MIT_UPDATE, {AtomType, DevId}, _ChangedLog) ->
 handle_change(?MIT_DELETE, {AtomType, DevId}, _ChangedLog) ->
     Uid = mit_util:uid(AtomType, DevId),
     case lookup(id, Uid) of
-    {ok, #entry{dn = Dn} = Entry} ->
+    {ok, #entry{dn = Dn} = _Entry} ->
         ?ERROR("mit delete :~p", [{AtomType, DevId}]),
-        mit_event:notify({delete, Dn, Entry}),
+        mit_event:notify({delete, Dn}),
         delete(dn, Dn);
     [] ->
         ok
@@ -201,7 +201,7 @@ do_handle_change(AtomType, DevId, Callback) ->
             {value, Dn} = dataset:get_value(dn, NotifyEntry),
             %% equal to mit_event_h
             update(AtomType, Dn, DevId, Obj),
-            ?INFO("mit_update,entry:~p,obj:~p",[NotifyEntry,Obj]),
+            ?INFO("mit_update,entry:~p,~n obj:~p",[NotifyEntry,Obj]),
             Callback(Dn, NotifyEntry);
         [] ->
             ?ERROR("cannot find entry: ~p", [{DevId, AtomType}])

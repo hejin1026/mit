@@ -1,4 +1,6 @@
--module(mit_event). 
+-module(mit_event).
+
+-include_lib("elog/include/elog.hrl").
 
 -export([start_link/0, stop/0]).
 
@@ -19,11 +21,14 @@ stop() ->
 	gen_event:stop(?MODULE).
 
 add_event_handler(Handler, Args) ->
+    ?INFO("add handler :~p", [Handler]),
 	gen_event:add_handler(?MODULE, Handler, Args).
 
 delete_event_handler(Handler, Args) ->
+    ?INFO("delete handler :~p", [Handler]),
 	gen_event:delete_handler(?MODULE, Handler, Args).
 
 notify(Event) ->
+    ?INFO("notify : ~p", [Event]),
 	gen_event:notify(?MODULE, Event).
 
