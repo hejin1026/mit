@@ -40,6 +40,12 @@ init([]) ->
 	Splite = {mit_splite, {mit_splite, start_link, []},
 		permanent, 10, worker, [mit_splite]},
 
+	Eoc = {mit_eoc, {mit_eoc, start_link, []},
+		permanent, 10, worker, [mit_eoc]},
+
+	Cpe = {mit_cpe, {mit_cpe, start_link, []},
+		permanent, 10, worker, [mit_cpe]},
+
     Fiber = {mit_fiber, {mit_fiber, start_link, []},
 		permanent, 10, worker, [mit_fiber]},
 

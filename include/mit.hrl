@@ -2,6 +2,10 @@
 
 -define(ONU, 2).
 
+-define(EOC, 3).
+
+-define(CPE, 4).
+
 -define(MIT_ADD, 1).
 
 -define(MIT_DELETE, 2).

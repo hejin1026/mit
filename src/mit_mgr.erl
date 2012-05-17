@@ -1,12 +1,12 @@
 %%%----------------------------------------------------------------------
 %%% File    : mit_mgr.erl
 %%% Author  : Ery Lee <ery.lee@gmail.com>
-%%% Purpose : 
+%%% Purpose :
 %%% Created : 18 Feb 2008
 %%% Updated : 08 Dec 2009
 %%% License : http://www.opengoss.com
 %%%
-%%% Copyright (C) 2007-2009, www.opengoss.com 
+%%% Copyright (C) 2007-2009, www.opengoss.com
 %%%----------------------------------------------------------------------
 -module(mit_mgr).
 
@@ -17,11 +17,11 @@
 
 -export([start_link/0, sync/0, sync_entry/2]).
 
--export([init/1, 
-         handle_call/3, 
-         handle_cast/2, 
-         handle_info/2, 
-         terminate/2, 
+-export([init/1,
+         handle_call/3,
+         handle_cast/2,
+         handle_info/2,
+         terminate/2,
          code_change/3]).
 
 -define(SERVER, ?MODULE).
@@ -64,6 +64,8 @@ handle_cast({sync_entry, Type, Id}, State) ->
         onu ->  sync(onu, mit_onu:one(Id));
         olt ->  sync(olt, mit_olt:one(Id));
         port -> sync(port, mit_port:one(Id));
+        eoc -> sync(eoc, mit_eoc:one(Id));
+        cpe -> sync(cpe, mit_cpe:one(Id));
         _ ->    ignore
     end,
     {noreply, State};
@@ -95,7 +97,7 @@ sync(Type, Records) ->
 
 do_sync_entry(port, Record) ->
     Entry = mit_util:notify_entry(port, Record),
-    {value, Dn} = dataset:get_value(dn, Entry),              
+    {value, Dn} = dataset:get_value(dn, Entry),
     ?INFO("sync port ~p", [Dn]),
     master_dist:monitor(Dn, Entry);
 
