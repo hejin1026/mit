@@ -98,16 +98,20 @@ notify_entry(port, Port) ->
 notify_entry(onu, Onu) ->
     mit_onu:get_notify_entry(Onu);
 notify_entry(eoc, Eoc) ->
-    mit_eoc_head:get_notify_entry(Eoc);
+    mit_eoc:get_notify_entry(Eoc);
 notify_entry(cpe, Cpe) ->
     mit_cpe:get_notify_entry(Cpe).
 
 
 
 get_type(olt) -> ?OLT;
+get_type(onu) -> ?ONU;
+get_type(eco) -> ?EOC;
+get_type(cpe) -> ?CPE;
 get_type(?OLT) -> olt;
 get_type(?ONU) -> onu;
-get_type(onu) -> ?ONU.
+get_type(?EOC) -> eoc;
+get_type(?CPE) -> cpe.
 
 
 
