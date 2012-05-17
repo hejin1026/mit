@@ -259,11 +259,16 @@ insert_port(Dn, Port) ->
             % ?INFO("info: insert port dn: ~p, entry: ~p", [Dn, Entry]),
             {value, Id} = dataset:get_value(id, Entry),
             {value, DeviceManu} = dataset:get_value(device_manu, Entry),
-	        {value, CityId} = dataset:get_value(cityid, Entry),
             DevType = mit_util:get_type(Type),
             DateTime = {datetime, calendar:local_time()},
-			PortInfo = [{device_type, DevType}, {device_id, Id},{device_manu,DeviceManu},
-                         {created_at, DateTime}, {updated_at, DateTime},{cityid,CityId} | Port],
+
+            MustInfo = [{device_type, DevType}, {device_id, Id},{device_manu,DeviceManu}, {created_at, DateTime}],
+	        MayInfo = case dataset:get_value(cityid, Entry) of
+                {value, CityId} -> [{cityid, CityId}];
+                {false, _} -> []
+            end,
+                
+			PortInfo = MustInfo ++ MayInfo ++  Port,
             case emysql:insert(mit_ports, PortInfo) of
                 {updated, {0, _}} ->
                     ?WARNING("cannot inserted port: ~p ~p", [Dn, Port]);
