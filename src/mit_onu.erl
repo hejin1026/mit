@@ -93,6 +93,7 @@ mem_attrs() ->
      cityid,
      sysoid,
      name,
+	 splite_id,
      device_name,
      adminstate,
      onlinestatus,
