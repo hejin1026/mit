@@ -80,6 +80,7 @@ mem_attrs() ->
     [id,
      ip,
      cityid,
+	 eoc_id,
      sysoid,
      device_name,
 	 terminal_status,
@@ -92,7 +93,6 @@ mem_attrs() ->
      discovery_state,
      device_kind,
      device_manu,
-     mac,
 	 rdn,
      collect_status,
      snmp_r,
@@ -150,9 +150,9 @@ init([]) ->
             lists:foreach(fun(Cpe) ->
 	              io:format("I want look at cpe: ~p ~n", [Cpe]),
                   {value, Id} = dataset:get_value(id, Cpe),
-                  {value, CpeId} = dataset:get_value(eoc_id, Cpe),
+                  {value, EocId} = dataset:get_value(eoc_id, Cpe),
                   {value, Rdn} = dataset:get_value(rdn, Cpe),
-                  case mit:lookup(id, to_binary("eoc:" ++ integer_to_list(CpeId))) of
+                  case mit:lookup(id, to_binary("eoc:" ++ integer_to_list(EocId))) of
                       {ok, #entry{data = Eoc}} ->
                           {value, EocIp} = dataset:get_value(ip, Eoc),
                           Dn = lists:concat(["cpe=", to_list(Rdn), ",", "eoc=", to_list(EocIp)]),
@@ -262,10 +262,11 @@ insert_cpe(Dn, Cpe) ->
         {ok, #entry{data = Eoc, type = eoc}} ->
             {value, EocId} = dataset:get_value(id, Eoc),
             {value, CityId} = dataset:get_value(cityid, Eoc),
+            {value, Device_manu} = dataset:get_value(device_manu, Eoc),
             {value, DeviceName} = dataset:get_value(device_name, Cpe,""),
             ?INFO("insert cpe: ~p", [Dn]),
             Now = {datetime, calendar:local_time()},
-            case emysql:insert(mit_eoc_terminals, [{name,DeviceName},
+            case emysql:insert(mit_eoc_terminals, [{device_manu,Device_manu},{name,DeviceName},
                 {eoc_id, EocId},{cityid, CityId},
                 {created_at, Now}, {updated_at, Now}|Cpe]) of
                 {updated, {1, Id}} ->
