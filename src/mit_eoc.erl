@@ -61,6 +61,7 @@ redisco() ->
 get_data(Sql) ->
     case emysql:sqlquery(Sql) of
         {ok, Records} ->
+		    ?INFO("eoc ~p ", [Records]),
             Records;
         {error, Reason}  ->
             ?ERROR("~p", [Reason]),
@@ -83,9 +84,9 @@ mem_attrs() ->
      mac,
      device_manu,
      device_kind,
-     avail_status,
      is_discovery,
      discovery_state,
+	 collect_status,
      head_status,
      snmp_r,
      snmp_w,
@@ -137,7 +138,8 @@ init([]) ->
     case emysql:select({mit_eoc_heads, mem_attrs()}) of
         {ok, Eocs} ->
             lists:foreach(fun(Eoc) ->
-                {value, Id} = dataset:get_value(id, Eoc),
+	              io:format("I want look at Eoc: ~p ~n", [Eoc]),
+               {value, Id} = dataset:get_value(id, Eoc),
                 {value, Ip} = dataset:get_value(ip, Eoc),
                 Dn = "eoc=" ++ to_list(Ip),
                 Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(eoc,Id), type = eoc, parent = undefined, data = Eoc},

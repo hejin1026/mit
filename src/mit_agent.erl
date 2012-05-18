@@ -70,7 +70,8 @@ code_change(_OldVsn, State, _Extra) ->
 
 handle_datalist(DataList) when is_list(DataList) ->
     ?INFO("get disco data :~p",[DataList]),
-	lists:foreach(fun(Data) -> handle_data(Data) end, DataList);
+	lists:foreach(fun(Data) -> ?INFO("get disco data :~p",[Data]),
+    handle_data(Data) end, DataList);
 handle_datalist(Data)  ->
     handle_data(Data).
 
@@ -81,7 +82,11 @@ handle_data({entry, onu, Dn, Attrs})->
 handle_data({entry, board, Dn, Attrs}) ->
     mit_board:add(Dn, Attrs);
 handle_data({entry, port, Dn, Attrs}) ->
-    mit_port:add(Dn, Attrs);
+	mit_port:add(Dn, Attrs);
+handle_data({entry, eoc, Dn, Attrs}) ->
+	mit_eoc:add(Dn, Attrs);
+handle_data({entry, cpe, Dn, Attrs}) ->
+	mit_cpe:add(Dn, Attrs);
 handle_data({entry, gem, Dn, Attrs}) ->
     mit_gem:add(Dn, Attrs);
 handle_data({entry, vlan, Dn, Attrs}) ->
