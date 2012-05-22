@@ -135,7 +135,7 @@ update(Dn, Attrs) ->
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
 %%                         {ok, State, Timeout} |
-%%                         ignore               |
+%%       s                  ignore               |
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
@@ -146,7 +146,7 @@ init([]) ->
                 {value, Id} = dataset:get_value(id, Olt),
                 {value, Ip} = dataset:get_value(ip, Olt),
                 Dn = "olt=" ++ to_list(Ip),
-                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(olt,Id), type = olt, parent = undefined, data = Olt},
+                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(olt,Id),ip=Ip, type = olt, parent = undefined, data = Olt},
                 mit:update(Entry)
             end, Olts),
             io:format("finish start olt : ~p ~n", [length(Olts)]),
@@ -225,7 +225,8 @@ insert_olt(Dn, Olt) ->
     CreatedAt = {datetime, calendar:local_time()},
     case emysql:insert(mit_olts, [{created_at, CreatedAt}|Olt]) of
     {updated, {1, Id}} ->
-        mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(olt, Id), type = olt, data = [{id, Id}|Olt]});
+        {value, Ip} = dataset:get_value(ip, Olt),
+        mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(olt, Id), ip=Ip, type = olt, data = [{id, Id}|Olt]});
     {updated, {0, _}} ->
         ?WARNING("cannot find inserted olt: ~p ~p", [Dn, Olt]);
     {error, Reason} ->
@@ -239,11 +240,13 @@ update_olt(Dn, OldAttrs, Attrs) ->
       case mit_util:merge(Attrs, OldAttrs) of
         {changed, MergedAttrs} ->
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
+            {value, Ip} = dataset:get_value(ip, MergedAttrs),
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             Datetime = {datetime, calendar:local_time()},
             case emysql:update(mit_olts, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
             {updated, {1, _Id}} -> %update mit cache
-                mit:update(#entry{dn = Dn, uid = mit_util:uid(olt,Id), type = olt, parent = mit_util:bdn(Dn), data = MergedAttrs});
+                mit:update(#entry{dn = Dn, uid = mit_util:uid(olt,Id), ip=Ip,type = olt,
+                    parent = mit_util:bdn(Dn), data = MergedAttrs});
             {updated, {0, _Id}} ->
                 ?WARNING("stale Olt: ~p", [Dn]);
             {error, Reason} ->

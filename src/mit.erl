@@ -75,9 +75,19 @@ lookup(id, Uid) ->
     case mnesia:dirty_index_read(entry, Uid, #entry.uid) of
     [Entry] ->
         {ok, Entry};
-    [Entry|_] ->
+    [_Entry|_] ->
         ?WARNING("more than one entry for one uid: ~p", [Uid]),
+        false;
+    [] ->
+        false
+    end;
+
+lookup(ip, Ip) ->
+    case mnesia:dirty_index_read(entry, Ip, #entry.ip) of
+    [Entry] ->
         {ok, Entry};
+    [_Entry|_] ->
+        false;
     [] ->
         false
     end.
@@ -114,7 +124,7 @@ delete(dn, Dn) ->
 %%--------------------------------------------------------------------
 init([]) ->
     {atomic, ok} = mnesia:create_table(entry,
-        [{ram_copies, [node()]}, {index, [uid, parent]},
+        [{ram_copies, [node()]}, {index, [uid, ip, parent]},
          {attributes, record_info(fields, entry)}]),
     mnesia:add_table_copy(entry, node(), ram_copies),
     emysql:delete(mit_devices_changed),

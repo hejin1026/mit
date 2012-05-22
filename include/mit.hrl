@@ -9,5 +9,5 @@
 -define(MIT_UPDATE, 3).
 
 %%example: {entry, <<"onu=1,olt=2">>, <<"onu:1">>, onu, [{id, 1}, {ip, "10.10.10.10"}]}
--record(entry, {dn, uid, parent = <<"">>, type, data}).
+-record(entry, {dn, uid, ip, parent = <<"">>, type, data}).
 
