@@ -41,6 +41,14 @@ uid(1, Id) ->
     to_binary("olt:" ++ integer_to_list(Id));
 uid(2, Id) ->
     to_binary("onu:" ++ integer_to_list(Id));
+uid(3, Id) ->
+    to_binary("eoc:" ++ integer_to_list(Id));
+uid(4, Id) ->
+    to_binary("cpe:" ++ integer_to_list(Id));
+uid(eoc, Id) ->
+    to_binary("eoc:" ++ integer_to_list(Id));
+uid(cpe, Id) ->
+    to_binary("cpe:" ++ integer_to_list(Id));
 uid(olt, Id) ->
     to_binary("olt:" ++ integer_to_list(Id));
 uid(onu, Id) ->
@@ -85,21 +93,33 @@ get_entry(onu, DevId) ->
 mit_entry(olt, Olt) ->
     mit_olt:get_entry(Olt);
 mit_entry(onu, Olt) ->
-    mit_onu:get_entry(Olt).
+    mit_onu:get_entry(Olt);
+mit_entry(eoc, Eoc) ->
+    mit_eoc:get_entry(Eoc);
+mit_entry(cpe, Cpe) ->
+    mit_cpe:get_entry(Cpe).
 
 notify_entry(olt, Olt) ->
     mit_olt:get_notify_entry(Olt);
 notify_entry(port, Port) ->
     mit_port:get_notify_entry(Port);
 notify_entry(onu, Onu) ->
-    mit_onu:get_notify_entry(Onu).
+    mit_onu:get_notify_entry(Onu);
+notify_entry(eoc, Eoc) ->
+    mit_eoc:get_notify_entry(Eoc);
+notify_entry(cpe, Cpe) ->
+    mit_cpe:get_notify_entry(Cpe).
 
 
 
 get_type(olt) -> ?OLT;
+get_type(onu) -> ?ONU;
+get_type(eoc) -> ?EOC;
+get_type(cpe) -> ?CPE;
 get_type(?OLT) -> olt;
 get_type(?ONU) -> onu;
-get_type(onu) -> ?ONU.
+get_type(?EOC) -> eoc;
+get_type(?CPE) -> cpe.
 
 
 
@@ -119,7 +139,11 @@ format(notify, [device_kind|Attrs], Entry, Data) ->
         {false, _} ->
             format(notify, Attrs, Entry, Data)
      end;
-         
+
+
+format(notify, [collect_status|Attrs], Entry, Data) ->
+    {value, Value} = dataset:get_value(collect_status, Entry,1),
+    format(notify, Attrs, Entry, [{oper_state, Value}|Data]);
 format(notify, [olt_state|Attrs], Entry, Data) ->
     {value, Value} = dataset:get_value(olt_state, Entry),
     format(notify, Attrs, Entry, [{oper_state, Value}|Data]);

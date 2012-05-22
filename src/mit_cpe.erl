@@ -1,15 +1,7 @@
-%%%----------------------------------------------------------------------
-%%% File    : mit_onu.erl
-%%% Author  : Ery Lee <ery.lee@gmail.com>
-%%% Purpose : onu mit
-%%% Created : 30 Nov 2009
-%%% License : http://www.opengoss.com
-%%%
-%%% Copyright (C) 2007-2009, www.opengoss.com
-%%%----------------------------------------------------------------------
--module(mit_onu).
 
--author('ery.lee@gmail.com').
+-module(mit_cpe).
+
+-author('chibj.opengoss@gmail.com').
 
 -include("mit.hrl").
 -include_lib("elog/include/elog.hrl").
@@ -57,18 +49,15 @@ stop() ->
 
 
 all() ->
-    Sql = "select t2.means as means, t1.* ,'onu' device_type  from mit_onus t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null",
+    Sql = "select  'snmp' means, 'cpe' device_type,t1.* from mit_eoc_terminals t1" ,
     get_data(Sql).
 
 one(Id) ->
-    Sql = "select t2.means as means, t1.* ,'onu' device_type  from mit_onus t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.id = " ++ to_list(Id),
+    Sql = "select  'snmp' means, 'cpe' device_type,t1.* from mit_eoc_terminals t1 where  t1.id = " ++ to_list(Id),
     get_data(Sql).
 
 redisco() ->
-    Sql = "select t2.means as means, t1.*,'onu' device_type   from mit_onus t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.discovery_state = 2",
+    Sql = "select  'snmp' means, 'cpe' device_type,t1.* from mit_eoc_terminals t1 where  t1.discovery_state = 2",
     get_data(Sql).
 
 get_data(Sql) ->
@@ -91,34 +80,21 @@ mem_attrs() ->
     [id,
      ip,
      cityid,
+	 eoc_id,
      sysoid,
-     name,
-	 splite_id,
      device_name,
-     adminstate,
-     onlinestatus,
-     authmacaddr,
-     authmacsn,
-     collect_type,
+	 terminal_status,
+     mac,
+     serial_no,
+     hardware_version,
+     software_version,
+     radio_channe,
+     oper_mode,
      discovery_state,
      device_kind,
      device_manu,
-     macaddr,
-     olt_id,
-     onu_no,
-     onu_state,
-     onu_type,
-     port_no,
-     pvlan,
-     rdn,
-     regsn,
-     regstate,
-     slot_no,
-     upmaximumbw,
-     downmaximumbw,
-     splite_id,
-     entrance_id,
-     ponid,
+	 rdn,
+     collect_status,
      snmp_r,
      snmp_w,
      snmp_v
@@ -126,22 +102,22 @@ mem_attrs() ->
 
 
 
-get_entry(Onu) ->
-    mit_util:format(mit, mem_attrs(), Onu).
+get_entry(Cpe) ->
+    mit_util:format(mit, mem_attrs(), Cpe).
 
-get_notify_entry(Onu) ->
-    {value, OltId} = dataset:get_value(olt_id, Onu),
-    {value, Rdn} = dataset:get_value(rdn, Onu),
-    case mit:lookup(id, to_binary("olt:" ++ integer_to_list(OltId))) of
-        {ok, #entry{data = Olt}} ->
-            {value, OltIp} = dataset:get_value(ip, Olt),
-            Dn = to_binary("onu=" ++ to_list(Rdn) ++ ",olt=" ++ to_list(OltIp)),
-            {value, OltCommunity} = dataset:get_value(snmp_r, Olt),
-            {value, OltVersion} = dataset:get_value(snmp_v, Olt, <<"v2c">>),
-            {value, OltWriteCommunity} = dataset:get_value(snmp_w, Olt, <<"private">>),
-            OltAttrs =  [{oltip, OltIp},{olt_snmp_r, OltCommunity},{olt_snmp_v, OltVersion}, {olt_snmp_w, OltWriteCommunity}],
-            Attrs = mit_util:format(notify, attrs(), Onu),
-            OltAttrs ++ [{dn, Dn}|Attrs];
+get_notify_entry(Cpe) ->
+    {value, EocId} = dataset:get_value(eoc_id, Cpe),
+    {value, Rdn} = dataset:get_value(rdn, Cpe),
+    case mit:lookup(id, to_binary("eoc:" ++ integer_to_list(EocId))) of
+        {ok, #entry{data = Eoc}} ->
+            {value, EocIp} = dataset:get_value(ip, Eoc),
+            Dn = to_binary("cpe=" ++ to_list(Rdn) ++ ",eoc=" ++ to_list(EocIp)),
+            {value, EocCommunity} = dataset:get_value(snmp_r, Eoc),
+            {value, EocVersion} = dataset:get_value(snmp_v, Eoc, <<"v2c">>),
+            {value, EocWriteCommunity} = dataset:get_value(snmp_w, Eoc, <<"private">>),
+            EocAttrs =  [{eocip, EocIp},{eoc_snmp_r, EocCommunity},{eoc_snmp_v, EocVersion}, {eoc_snmp_w, EocWriteCommunity}],
+            Attrs = mit_util:format(notify, attrs(), Cpe),
+            EocAttrs ++ [{dn, Dn}|Attrs];
         false ->
             []
     end.
@@ -149,14 +125,14 @@ get_notify_entry(Onu) ->
 
 lookup(Dn) ->
     case mit:lookup(Dn) of
-        {ok, #entry{data = Onu}} ->
-            {ok, Onu};
+        {ok, #entry{data = Cpe}} ->
+            {ok, Cpe};
         false ->
             false
     end.
 
-add(Dn, Onu) ->
-	gen_server:cast(?MODULE, {add, Dn, Onu}).
+add(Dn, Cpe) ->
+	gen_server:cast(?MODULE, {add, Dn, Cpe}).
 
 update(Dn, Attrs) ->
     gen_server:cast(?MODULE, {update, Dn, Attrs}).
@@ -169,31 +145,27 @@ update(Dn, Attrs) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    case emysql:select({mit_onus, mem_attrs()}) of
-        {ok, Onus} ->
-            lists:foreach(fun(Onu) ->
-                  {value, Id} = dataset:get_value(id, Onu),
-                  {value, OltId} = dataset:get_value(olt_id, Onu),
-                  Entry = case dataset:get_value(ip, Onu) of
-                      {value, Ip} ->
-                          #entry{uid = mit_util:uid(onu,Id), ip=Ip, type = onu, data = Onu};
-                      {false, _} ->
-                          #entry{uid = mit_util:uid(onu,Id), type = onu, data = Onu}
-                   end,
-                  {value, Rdn} = dataset:get_value(rdn, Onu),
-                  case mit:lookup(id, to_binary("olt:" ++ integer_to_list(OltId))) of
-                      {ok, #entry{data = Olt}} ->
-                          {value, OltIp} = dataset:get_value(ip, Olt),
-                          Dn = lists:concat(["onu=", to_list(Rdn), ",", "olt=", to_list(OltIp)]),
-                          mit:update(Entry#entry{dn = to_binary(Dn), parent = mit_util:bdn(Dn)});
+    case emysql:select({mit_eoc_terminals, mem_attrs()}) of
+        {ok, Cpes} ->
+            lists:foreach(fun(Cpe) ->
+	              io:format("I want look at cpe: ~p ~n", [Cpe]),
+                  {value, Id} = dataset:get_value(id, Cpe),
+                  {value, EocId} = dataset:get_value(eoc_id, Cpe),
+                  {value, Rdn} = dataset:get_value(rdn, Cpe),
+                  case mit:lookup(id, to_binary("eoc:" ++ integer_to_list(EocId))) of
+                      {ok, #entry{data = Eoc}} ->
+                          {value, EocIp} = dataset:get_value(ip, Eoc),
+                          Dn = lists:concat(["cpe=", to_list(Rdn), ",", "eoc=", to_list(EocIp)]),
+                          mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(cpe,Id), type = cpe,
+                              parent = mit_util:bdn(Dn), data = Cpe});
                       false ->
                           ignore
                   end
-          end, Onus),
-          io:format("finish start onu : ~p ~n", [length(Onus)]),
+          end, Cpes),
+          io:format("finish start cpe : ~p ~n", [length(Cpes)]),
           {ok, state};
         {error, Reason} ->
-            ?ERROR("mit_onu start failure...~p",[Reason]),
+            ?ERROR("mit_cpe start failure...~p",[Reason]),
             {stop, Reason}
     end.
 
@@ -219,22 +191,22 @@ handle_call(Request, _From, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
-handle_cast({add, Dn, Onu0}, State) ->
-    Onu = transform(Onu0),
+handle_cast({add, Dn, Cpe0}, State) ->
+    Cpe = transform(Cpe0),
     case lookup(Dn) of
-        {ok, OldOnu} ->
-            update_onu(Dn, OldOnu, Onu);
+        {ok, Entry} ->
+            update_cpe(Dn, Entry, Cpe);
         false ->
-            insert_onu(Dn, Onu)
+            insert_cpe(Dn, Cpe)
     end,
     {noreply, State};
 
 handle_cast({update, Dn, Attrs}, State) ->
     case lookup(Dn) of
         {ok, OldAttrs} ->
-            update_onu(Dn, OldAttrs, Attrs);
+            update_cpe(Dn, OldAttrs, Attrs);
         false ->
-            ?ERROR("cannot find onu ~p", [Dn])
+            ?ERROR("cannot find cpe ~p", [Dn])
     end,
     {noreply, State};
 
@@ -265,21 +237,19 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-update_onu(Dn, OldAttrs, Attrs) ->
-    %?INFO("update onu,dn:~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, Attrs]),
+update_cpe(Dn, OldAttrs, Attrs) ->
+    ?INFO("update cpe,dn:~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, Attrs]),
     case mit_util:merge(Attrs, OldAttrs) of
         {changed, MergedAttrs} ->
-           % ?WARNING("update onu dn:~p,newattr: ~p ~n,result : ~p", [Dn, Attrs, MergedAttrs]),
+           ?WARNING("update cpe dn:~p,newattr: ~p ~n,result : ~p", [Dn, Attrs, MergedAttrs]),
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
-            {value, Ip} = dataset:get_value(ip, MergedAttrs, undefined),
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             Datetime = {datetime, calendar:local_time()},
-            case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
+            case emysql:update(mit_eoc_terminals, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
                 {updated, {1, _Id}} -> %update mit cache
-                    mit:update(#entry{dn = Dn, uid = mit_util:uid(onu,Id), ip= Ip,
-                        type = onu, parent = mit_util:bdn(Dn), data = MergedAttrs});
-                {updated, {0, _Id}} -> %stale onu?
-                    ?WARNING("stale onu: ~p,~p", [Dn, Id]);
+                    mit:update(#entry{dn = Dn, uid = mit_util:uid(cpe,Id), type = cpe, parent = mit_util:bdn(Dn), data = MergedAttrs});
+                {updated, {0, _Id}} ->
+                    ?WARNING("stale cpe: ~p,~p", [Dn, Id]);
                 {error, Reason} ->
                     ?ERROR("~p", [Reason])
             end;
@@ -287,30 +257,33 @@ update_onu(Dn, OldAttrs, Attrs) ->
             ok
     end.
 
-insert_onu(Dn, Onu) ->
+insert_cpe(Dn, Cpe) ->
     case mit:lookup(mit_util:bdn(Dn)) of
-        {ok, #entry{data = Olt, type = olt}} ->
-            {value, OltId} = dataset:get_value(id, Olt),
-            {value, CityId} = dataset:get_value(cityid, Olt),
-            ?INFO("insert onu: ~p", [Dn]),
+        {ok, #entry{data = Eoc, type = eoc}} ->
+            {value, EocId} = dataset:get_value(id, Eoc),
+            {value, CityId} = dataset:get_value(cityid, Eoc),
+            {value, Device_manu} = dataset:get_value(device_manu, Eoc),
+            {value, DeviceName} = dataset:get_value(device_name, Cpe,""),
+            ?INFO("insert cpe: ~p", [Dn]),
             Now = {datetime, calendar:local_time()},
-            case emysql:insert(mit_onus, [{olt_id, OltId},{cityid, CityId},{created_at, Now}|Onu]) of
+            case emysql:insert(mit_eoc_terminals, [{device_manu,Device_manu},{name,DeviceName},
+                {eoc_id, EocId},{cityid, CityId},
+                {created_at, Now}, {updated_at, Now}|Cpe]) of
                 {updated, {1, Id}} ->
-               %     ?INFO("insert onu dn:~p,result: ~p", [Dn, Onu]),
-                    {value, Ip} = dataset:get_value(ip, Onu, undefined),
-                    mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id),ip=Ip,type = onu,
-                        parent = mit_util:bdn(Dn),data = [{id, Id}|Onu]});
+                   ?INFO("insert cpe dn:~p,result: ~p", [Dn, Cpe]),
+                    mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(cpe,Id), type = cpe, parent = mit_util:bdn(Dn),
+                        data = [{id, Id}|Cpe]});
                 {updated, {0, _}} ->
-                    ?WARNING("cannot find inserted onu: ~p ~p", [Dn, Onu]);
+                    ?WARNING("cannot find inserted cpe: ~p ~p", [Dn, Cpe]);
                 {error, Reason} ->
-                    ?ERROR("OltId : ~p,dn :~p, Reason: ~p", [OltId,Dn, Reason]);
+                    ?ERROR("EocId : ~p,dn :~p, Reason: ~p", [EocId,Dn, Reason]);
                 _ ->
                     ok
             end;
         {ok, #entry{type = Type}} ->
-            ?ERROR("cannot find :~p to olt: ~p", [Type, Dn]);
+            ?ERROR("cannot find :~p to eoc: ~p", [Type, Dn]);
         false ->
-            ?ERROR("cannot find olt: ~p", [Dn])
+            ?ERROR("cannot find eoc: ~p", [Dn])
     end.
 
 transform(Attrs) ->
@@ -332,7 +305,7 @@ transform([{vendor, Vendor}|T], Acc) ->
     transform(T, [{device_manu, ManuId}|Acc]);
 transform([{type,Type }|T], Acc) ->
     TypeId = mit_dict:lookup(type, Type),
-    transform(T, [{device_kind, TypeId},{onu_type,to_binary(Type)}|Acc]);
+    transform(T, [{device_kind, TypeId},{cpe_type,to_binary(Type)}|Acc]);
 transform([H|T], Acc) when is_list(H) ->
     transform(T, [to_binary(H) | Acc]);
 transform([H|T], Acc) ->
