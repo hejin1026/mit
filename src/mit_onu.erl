@@ -193,7 +193,6 @@ do_init() ->
                   {value, Rdn} = dataset:get_value(rdn, Onu),
                   case mit:lookup(id, to_binary("olt:" ++ integer_to_list(OltId))) of
                       {ok, #entry{dn = OltDn, data = Olt}} ->
-                          ?INFO("insert onu :~p", [OltDn]),
                           {value, OltIp} = dataset:get_value(ip, Olt),
                           Dn = lists:concat(["onu=", to_list(Rdn), ",", "olt=", to_list(OltIp)]),
                           mit:update(Entry#entry{dn = to_binary(Dn), parent = OltDn});
