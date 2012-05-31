@@ -49,4 +49,4 @@ worker() ->
 
     Vlan = {mit_vlan, {mit_vlan, start_link, []},permanent, 10, worker, [mit_vlan]},
 
-    [Mit, Dict, Mgr, Olt, Onu,Eoc,Cpe, Board, Port,Splite, Fiber, Gem, Vlan].
+    [Mit, Dict, Olt, Onu,Eoc,Cpe, Board, Port,Splite, Fiber, Gem, Vlan].
