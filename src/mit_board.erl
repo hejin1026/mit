@@ -86,16 +86,14 @@ update(Dn, Attrs) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    case catch do_init() of
-    {ok, State} ->
-        {ok, State};
-    {error, Reason} ->
-        ?ERROR("start failure...",[]),
-        {stop, Reason};
-    {'EXIT', Reason} ->
-        ?ERROR("start failure...",[]),
-        {stop, Reason}
-    end.
+    case mnesia:system_info(extra_db_nodes) of
+        [] -> %master node
+            do_init();
+        _ -> %slave node
+            ok
+    end,
+    {ok, state}.
+    
 
 do_init() ->
     {ok, Boards} = emysql:select({mit_boards, attrs()}),
