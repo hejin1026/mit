@@ -110,7 +110,7 @@ do_init() ->
 			{value, Boardid} = dataset:get_value(boardid, Board),
 			Rdn = "slot=" ++ to_list(Boardid),
             Dn = Rdn ++ "," ++ to_list(Bdn),
-            mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid), type = board, data = Board});
+            mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = Bdn, type = board, data = Board});
         false ->
             ignore
         end

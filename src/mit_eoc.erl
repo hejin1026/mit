@@ -149,7 +149,7 @@ init([]) ->
             {ok, state};
         {error, Reason} ->
             ?ERROR("start eocs failure...~p",[Reason]),
-            {stop, Reason}
+            {ok, state}
     end.
 
 %%--------------------------------------------------------------------

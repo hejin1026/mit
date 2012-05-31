@@ -166,7 +166,7 @@ init([]) ->
           {ok, state};
         {error, Reason} ->
             ?ERROR("mit_cpe start failure...~p",[Reason]),
-            {stop, Reason}
+            {ok, state}
     end.
 
 %%--------------------------------------------------------------------
