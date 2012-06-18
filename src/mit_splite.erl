@@ -52,17 +52,13 @@ lookup(Dn) ->
 
 init([]) ->
     ?INFO("start mit splite...",[]),
-    case catch do_init() of
-    {ok, State} ->
-        timer:send_after(30 * 60 * 1000, self(), update),
-        {ok, State};
-    {error, Reason} ->
-         ?ERROR("mit_splite start failure...",[]),
-        {stop, Reason};
-    {'EXIT', Reason} ->
-         ?ERROR("mit_splite start failure...",[]),
-        {stop, Reason}
-    end.
+    case mnesia:system_info(extra_db_nodes) of
+        [] -> %master node
+            do_init();
+        _ -> %slave node
+            ok
+    end,
+    {ok, state}.
 
 
 do_init() ->

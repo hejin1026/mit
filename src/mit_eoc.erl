@@ -135,6 +135,16 @@ update(Dn, Attrs) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
+    case mnesia:system_info(extra_db_nodes) of
+        [] -> %master node
+            do_init();
+        _ -> %slave node
+            ok
+    end,
+    {ok, state}.
+
+
+do_init() ->
     case emysql:select({mit_eoc_heads, mem_attrs()}) of
         {ok, Eocs} ->
             lists:foreach(fun(Eoc) ->
@@ -149,7 +159,7 @@ init([]) ->
             {ok, state};
         {error, Reason} ->
             ?ERROR("start eocs failure...~p",[Reason]),
-            {stop, Reason}
+            {ok, state}
     end.
 
 %%--------------------------------------------------------------------

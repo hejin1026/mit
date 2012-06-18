@@ -11,6 +11,7 @@
 -export([bdn/1,
          rdn/1,
 		 uid/2,
+         nid/1,
          get_type/1,
          format/3,
          merge/2,
@@ -62,6 +63,11 @@ uid(gem, Id) ->
 uid(vlan, Id) ->
     to_binary("vlan:" ++ integer_to_list(Id)).
 
+nid(undefined) ->
+    undefined;
+nid(Uid) ->
+    [_Type,Id] = string:tokens(binary_to_list(Uid), ":"),
+    Id.
 
 merge(NewAttrs, OldAttrs) ->
     merge(unchanged, NewAttrs, OldAttrs).

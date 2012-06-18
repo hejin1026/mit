@@ -182,7 +182,7 @@ do_init([Port|Ports]) ->
             Rdn = "port=" ++ to_list(PortIndex),
             Dn = Rdn ++ "," ++ binary_to_list(DevDn),
             mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,Id),
-                type = port, parent = mit_util:bdn(Dn), data = Port});
+                type = port, parent = DevDn, data = Port});
         false -> ingore
     end,
     do_init(Ports).

@@ -169,19 +169,33 @@ update(Dn, Attrs) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
+    case mnesia:system_info(extra_db_nodes) of
+        [] -> %master node
+            do_init();
+        _ -> %slave node
+            ok
+    end,
+    {ok, state}.
+
+
+do_init() ->
     case emysql:select({mit_onus, mem_attrs()}) of
         {ok, Onus} ->
             lists:foreach(fun(Onu) ->
-	              % io:format("I want look at onu: ~p ~n", [Onu]),
                   {value, Id} = dataset:get_value(id, Onu),
                   {value, OltId} = dataset:get_value(olt_id, Onu),
+                  Entry = case dataset:get_value(ip, Onu) of
+                      {value, Ip} ->
+                          #entry{uid = mit_util:uid(onu,Id), ip=Ip, type = onu, data = Onu};
+                      {false, _} ->
+                          #entry{uid = mit_util:uid(onu,Id), type = onu, data = Onu}
+                   end,
                   {value, Rdn} = dataset:get_value(rdn, Onu),
                   case mit:lookup(id, to_binary("olt:" ++ integer_to_list(OltId))) of
-                      {ok, #entry{data = Olt}} ->
+                      {ok, #entry{dn = OltDn, data = Olt}} ->
                           {value, OltIp} = dataset:get_value(ip, Olt),
                           Dn = lists:concat(["onu=", to_list(Rdn), ",", "olt=", to_list(OltIp)]),
-                          mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id), type = onu,
-                              parent = mit_util:bdn(Dn), data = Onu});
+                          mit:update(Entry#entry{dn = to_binary(Dn), parent = OltDn});
                       false ->
                           ignore
                   end
@@ -267,11 +281,13 @@ update_onu(Dn, OldAttrs, Attrs) ->
         {changed, MergedAttrs} ->
            % ?WARNING("update onu dn:~p,newattr: ~p ~n,result : ~p", [Dn, Attrs, MergedAttrs]),
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
+            {value, Ip} = dataset:get_value(ip, MergedAttrs, undefined),
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             Datetime = {datetime, calendar:local_time()},
             case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
                 {updated, {1, _Id}} -> %update mit cache
-                    mit:update(#entry{dn = Dn, uid = mit_util:uid(onu,Id), type = onu, parent = mit_util:bdn(Dn), data = MergedAttrs});
+                    mit:update(#entry{dn = Dn, uid = mit_util:uid(onu,Id), ip= Ip,
+                        type = onu, parent = mit_util:bdn(Dn), data = MergedAttrs});
                 {updated, {0, _Id}} -> %stale onu?
                     ?WARNING("stale onu: ~p,~p", [Dn, Id]);
                 {error, Reason} ->
@@ -286,16 +302,14 @@ insert_onu(Dn, Onu) ->
         {ok, #entry{data = Olt, type = olt}} ->
             {value, OltId} = dataset:get_value(id, Olt),
             {value, CityId} = dataset:get_value(cityid, Olt),
-            {value, DeviceName} = dataset:get_value(device_name, Onu,""),
             ?INFO("insert onu: ~p", [Dn]),
             Now = {datetime, calendar:local_time()},
-            case emysql:insert(mit_onus, [{name,DeviceName},
-                {olt_id, OltId},{cityid, CityId},
-                {created_at, Now}, {updated_at, Now}|Onu]) of
+            case emysql:insert(mit_onus, [{olt_id, OltId},{cityid, CityId},{created_at, Now}|Onu]) of
                 {updated, {1, Id}} ->
                %     ?INFO("insert onu dn:~p,result: ~p", [Dn, Onu]),
-                    mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id), type = onu, parent = mit_util:bdn(Dn),
-                        data = [{id, Id}|Onu]});
+                    {value, Ip} = dataset:get_value(ip, Onu, undefined),
+                    mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id),ip=Ip,type = onu,
+                        parent = mit_util:bdn(Dn),data = [{id, Id}|Onu]});
                 {updated, {0, _}} ->
                     ?WARNING("cannot find inserted onu: ~p ~p", [Dn, Onu]);
                 {error, Reason} ->

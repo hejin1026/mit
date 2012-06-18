@@ -56,6 +56,16 @@ update(Dn, Attrs) ->
     gen_server:cast(?MODULE, {update, Dn, Attrs}).
 
 init([]) ->
+    case mnesia:system_info(extra_db_nodes) of
+        [] -> %master node
+            do_init();
+        _ -> %slave node
+            ok
+    end,
+    {ok, state}.
+
+
+do_init() ->
     case emysql:sqlquery("select * from fault_events where
         (alarm_name = 'hwolteponlumlost' or alarm_name = 'hwAlarmonusingledown') and alarm_state <> 3  ") of
     {ok, Faults} ->

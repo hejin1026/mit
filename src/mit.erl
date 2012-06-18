@@ -75,9 +75,19 @@ lookup(id, Uid) ->
     case mnesia:dirty_index_read(entry, Uid, #entry.uid) of
     [Entry] ->
         {ok, Entry};
-    [Entry|_] ->
+    [_Entry|_] ->
         ?WARNING("more than one entry for one uid: ~p", [Uid]),
+        false;
+    [] ->
+        false
+    end;
+
+lookup(ip, Ip) ->
+    case mnesia:dirty_index_read(entry, Ip, #entry.ip) of
+    [Entry] ->
         {ok, Entry};
+    [_Entry|_] ->
+        false;
     [] ->
         false
     end.
@@ -113,12 +123,17 @@ delete(dn, Dn) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    {atomic, ok} = mnesia:create_table(entry,
-        [{ram_copies, [node()]}, {index, [uid, parent]},
-         {attributes, record_info(fields, entry)}]),
+    case mnesia:system_info(extra_db_nodes) of
+        [] -> %master node
+            emysql:delete(mit_devices_changed),
+            {atomic, ok} = mnesia:create_table(entry,
+                [{ram_copies, [node()]}, {index, [uid, ip, parent]},
+                 {attributes, record_info(fields, entry)}]),
+            erlang:send_after(120 * 1000, self(), sync_changes);
+         _ -> %slave node
+            ok
+    end,
     mnesia:add_table_copy(entry, node(), ram_copies),
-    emysql:delete(mit_devices_changed),
-    erlang:send_after(120 * 1000, self(), sync_changes),
     io:format("finish start mit...~n",[]),
     {ok, state}.
 

@@ -145,6 +145,16 @@ update(Dn, Attrs) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
+    case mnesia:system_info(extra_db_nodes) of
+        [] -> %master node
+            do_init();
+        _ -> %slave node
+            ok
+    end,
+    {ok, state}.
+
+
+do_init() ->
     case emysql:select({mit_eoc_terminals, mem_attrs()}) of
         {ok, Cpes} ->
             lists:foreach(fun(Cpe) ->
@@ -166,7 +176,7 @@ init([]) ->
           {ok, state};
         {error, Reason} ->
             ?ERROR("mit_cpe start failure...~p",[Reason]),
-            {stop, Reason}
+            {ok, state}
     end.
 
 %%--------------------------------------------------------------------
