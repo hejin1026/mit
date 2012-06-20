@@ -130,7 +130,8 @@ init([]) ->
                 [{ram_copies, [node()]}, {index, [uid, ip, parent]},
                  {attributes, record_info(fields, entry)}]),
             erlang:send_after(120 * 1000, self(), sync_changes);
-         _ -> %slave node
+         V -> %slave node
+            ?INFO("im slave node:~p",[V]),
             ok
     end,
     mnesia:add_table_copy(entry, node(), ram_copies),
