@@ -91,9 +91,22 @@ handle_data({entry, gem, Dn, Attrs}) ->
     mit_gem:add(Dn, Attrs);
 handle_data({entry, vlan, Dn, Attrs}) ->
     mit_vlan:add(Dn, Attrs);
+handle_data({operate, Operate}) ->
+    ?INFO("get parse operate :~p",[Operate]),
+	handle_operate(Operate);
 handle_data({hostinfo, HostInfo}) ->
     handle_hostinfo(HostInfo).
 
+handle_operate(Operate)	->
+    DateTime = {datetime, {date(), time()}},
+    {value, Id} = dataset:get_value(id, Operate),
+    Operate1 = lists:keydelete(id, 1, Operate),
+	case emysql:update(mit_operates, [{updated_at, DateTime} | Operate1], {id, Id}) of
+        {error, Reason} ->
+            ?ERROR("update Operate error :~p, ~n Reason: ~p", [Operate, Reason]);
+        _ ->
+            ok
+     end.
 
 handle_hostinfo(HostInfo) ->
     DateTime = {datetime, {date(), time()}},
