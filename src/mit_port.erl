@@ -165,7 +165,7 @@ init([]) ->
     end.
 
 do_init() ->
-    {ok, Ports} = emysql:select({mit_ports, mem_attrs()}),
+    {ok, Ports} = emysql:select({mit_ports, mem_attrs(),{device_type,1}}),
     do_init(Ports),
     {ok, state}.
 
@@ -267,7 +267,7 @@ insert_port(Dn, Port) ->
                 {value, CityId} -> [{cityid, CityId}];
                 {false, _} -> []
             end,
-                
+
 			PortInfo = MustInfo ++ MayInfo ++  Port,
             case emysql:insert(mit_ports, PortInfo) of
                 {updated, {0, _}} ->
