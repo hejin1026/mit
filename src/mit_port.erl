@@ -305,7 +305,7 @@ update_port(Dn, OldAttrs, Attrs) ->
     end.
 
 add_splite(PonDn,Port)->
-	?INFO("add_splite ~p,~p", [PonDn,Port)])
+	?INFO("add_splite ~p,~p", [PonDn,Port)]),
 	{value, DeviceType} = dataset:get_value(device_type, Port),
 	{value, PortCategory} = dataset:get_value(port_category, Port),
 	{value, PonId} = dataset:get_value(id, Port),
