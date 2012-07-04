@@ -11,7 +11,7 @@
 
 -author('ery.lee@gmail.com').
 
--import(extbif, [to_binary/1, to_list/1]).
+-import(extbif, [to_binary/1, to_list/1,to_integer/1]).
 
 -include("mit.hrl").
 -include_lib("elog/include/elog.hrl").
@@ -274,7 +274,8 @@ insert_port(Dn, Port) ->
                     ?WARNING("cannot inserted port: ~p ~p", [Dn, Port]);
                 {updated, {1, PId}} ->
                     mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,PId), type = port,
-                        parent = mit_util:bdn(Dn), data = [{id, PId}|Port]});
+                        parent = mit_util:bdn(Dn), data = [{id, PId}|Port]}),
+					add_splite(Dn,[{id, PId}|Port]); %每加入一个PON口，同时生成一个一级分光器，直接挂在pon下
                 {error, Reason} ->
                     ?WARNING("~p", [Reason])
             end;
@@ -302,4 +303,25 @@ update_port(Dn, OldAttrs, Attrs) ->
         {unchanged, _} ->
             ok
     end.
+
+add_splite(PonDn,Port)->
+	{value, DeviceType} = dataset:get_value(device_type, Port),
+	{value, PortCategory} = dataset:get_value(port_category, Port),
+	{value, PonId} = dataset:get_value(id, Port),
+	{value, OltId} = dataset:get_value(device_id, Port),
+	{value, PortName} = dataset:get_value(port_name, Port),
+	if to_integer(DeviceType)==1 andalso to_integer(PortCategory)==1 ->
+			mit_splite:add(PonDn,[{pon_id,PonId},{olt_id,OltId},{split_name,PortName},{splitter_level,1}]);
+		true -> ignore
+	end.
+
+
+
+
+
+
+
+
+
+
 
