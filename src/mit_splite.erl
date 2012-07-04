@@ -124,7 +124,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 
 insert_splite(PonDn,Splite)->
-	?INFO(" inserte Splite: ~p ~p", [PonDn, Splite]),
+	?INFO(" insert_splite: ~p ~p", [PonDn, Splite]),
      case emysql:insert(mit_splites, Splite) of
             {updated, {0, _}} ->
                   ?WARNING("cannot inserted Splite: ~p ~p", [PonDn, Splite]);
