@@ -274,8 +274,8 @@ insert_port(Dn, Port) ->
                     ?WARNING("cannot inserted port: ~p ~p", [Dn, Port]);
                 {updated, {1, PId}} ->
                     mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,PId), type = port,
-                        parent = mit_util:bdn(Dn), data = [{id, PId}|Port]}),
-					add_splite(Dn,[{id, PId}|Port]); %每加入一个PON口，同时生成一个一级分光器，直接挂在pon下
+                        parent = mit_util:bdn(Dn), data = [{id, PId}|PortInfo]}),
+					add_splite(Dn,[{id, PId}|PortInfo]); %每加入一个PON口，同时生成一个一级分光器，直接挂在pon下
                 {error, Reason} ->
                     ?WARNING("~p", [Reason])
             end;
