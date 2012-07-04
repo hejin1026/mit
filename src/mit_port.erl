@@ -11,7 +11,7 @@
 
 -author('ery.lee@gmail.com').
 
--import(extbif, [to_binary/1, to_list/1,to_integer/1]).
+-import(extbif, [to_binary/1, to_list/1]).
 
 -include("mit.hrl").
 -include_lib("elog/include/elog.hrl").
@@ -305,12 +305,13 @@ update_port(Dn, OldAttrs, Attrs) ->
     end.
 
 add_splite(PonDn,Port)->
+	?INFO("add_splite ~p,~p", [PonDn,Port)])
 	{value, DeviceType} = dataset:get_value(device_type, Port),
 	{value, PortCategory} = dataset:get_value(port_category, Port),
 	{value, PonId} = dataset:get_value(id, Port),
 	{value, OltId} = dataset:get_value(device_id, Port),
 	{value, PortName} = dataset:get_value(port_name, Port),
-	if to_integer(DeviceType)==1 andalso to_integer(PortCategory)==1 ->
+	if DeviceType==1 andalso PortCategory==1 ->
 			mit_splite:add(PonDn,[{pon_id,PonId},{olt_id,OltId},{split_name,PortName},{splitter_level,1}]);
 		true -> ignore
 	end.
