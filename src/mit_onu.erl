@@ -302,9 +302,10 @@ insert_onu(Dn, Onu) ->
         {ok, #entry{data = Olt, type = olt}} ->
             {value, OltId} = dataset:get_value(id, Olt),
             {value, CityId} = dataset:get_value(cityid, Olt),
+	        {value, DeviceName} = dataset:get_value(device_name, Onu,""),
             ?INFO("insert onu: ~p", [Dn]),
             Now = {datetime, calendar:local_time()},
-            case emysql:insert(mit_onus, [{olt_id, OltId},{cityid, CityId},{created_at, Now}|Onu]) of
+            case emysql:insert(mit_onus, [{olt_id, OltId},{cityid, CityId},{name,DeviceName},{created_at, Now}|Onu]) of
                 {updated, {1, Id}} ->
                %     ?INFO("insert onu dn:~p,result: ~p", [Dn, Onu]),
                     {value, Ip} = dataset:get_value(ip, Onu, undefined),

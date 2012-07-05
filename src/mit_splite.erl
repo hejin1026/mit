@@ -12,7 +12,7 @@
 
 %api
 -export([attrs/0,
-         lookup/1]).
+         lookup/1,add/2]).
 
 -export([init/1,
 		 handle_call/3,
@@ -25,6 +25,9 @@
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+add(Dn, Attrs) ->
+    gen_server:cast(?MODULE, {add, Dn, Attrs}).
 
 stop() ->
 	gen_server:call(?MODULE, stop).
@@ -96,6 +99,9 @@ handle_call(Request, _From, State) ->
 	?ERROR("unexpected requrest: ~n", [Request]),
     {reply, {error, unexpected_request}, State}.
 
+handle_cast({add, Dn, Splite}, State) ->
+     insert_splite(Dn, Splite),
+    {noreply, State};
 
 handle_cast(Msg, State) ->
 	?ERROR("unexpected msg: ~p", [Msg]),
@@ -116,3 +122,16 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
+
+insert_splite(PonDn,Splite)->
+	?INFO(" insert_splite: ~p ~p", [PonDn, Splite]),
+     case emysql:insert(mit_splites, Splite) of
+            {updated, {0, _}} ->
+                  ?WARNING("cannot inserted Splite: ~p ~p", [PonDn, Splite]);
+            {updated, {1, PId}} ->
+                  SpliteDn = "splite=" ++ to_list(PId) ++ "," ++  to_list(PonDn),
+                  mit:update(#entry{dn = to_binary(SpliteDn), uid = mit_util:uid(splite,PId),
+									type = splite, parent = PonDn, data = [{id, PId}|Splite]});
+            {error, Reason} ->
+                  ?WARNING("~p", [Reason])
+      end.

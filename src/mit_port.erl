@@ -172,7 +172,7 @@ init([]) ->
     
 
 do_init() ->
-    {ok, Ports} = emysql:select({mit_ports, mem_attrs(), {'in', port_category, [1,2]}}),
+    {ok, Ports} = emysql:select({mit_ports, mem_attrs(),{device_type,1}}),
     do_init(Ports),
     {ok, state}.
 
@@ -274,14 +274,15 @@ insert_port(Dn, Port) ->
                 {value, CityId} -> [{cityid, CityId}];
                 {false, _} -> []
             end,
-                
+
 			PortInfo = MustInfo ++ MayInfo ++  Port,
             case emysql:insert(mit_ports, PortInfo) of
                 {updated, {0, _}} ->
                     ?WARNING("cannot inserted port: ~p ~p", [Dn, Port]);
                 {updated, {1, PId}} ->
                     mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,PId), type = port,
-                        parent = mit_util:bdn(Dn), data = [{id, PId}|Port]});
+                        parent = mit_util:bdn(Dn), data = [{id, PId}|PortInfo]}),
+					add_splite(Dn,[{id, PId}|PortInfo]); %每加入一个PON口，同时生成一个一级分光器，直接挂在pon下
                 {error, Reason} ->
                     ?WARNING("~p", [Reason])
             end;
@@ -309,4 +310,26 @@ update_port(Dn, OldAttrs, Attrs) ->
         {unchanged, _} ->
             ok
     end.
+
+add_splite(PonDn,Port)->
+	?INFO("add_splite ~p,~p", [PonDn,Port]),
+	{value, DeviceType} = dataset:get_value(device_type, Port),
+	{value, PortCategory} = dataset:get_value(port_category, Port),
+	{value, PonId} = dataset:get_value(id, Port),
+	{value, OltId} = dataset:get_value(device_id, Port),
+	{value, PortName} = dataset:get_value(port_name, Port),
+	if DeviceType==1 andalso PortCategory==1 ->
+			mit_splite:add(PonDn,[{pon_id,PonId},{olt_id,OltId},{split_name,PortName},{splitter_level,1}]);
+		true -> ignore
+	end.
+
+
+
+
+
+
+
+
+
+
 

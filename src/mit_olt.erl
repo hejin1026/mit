@@ -274,7 +274,7 @@ transform([{vendor, Vendor}|T], Acc) ->
     transform(T, [{device_manu, ManuId}|Acc]);
 transform([{type, Type}|T], Acc) ->
 	TypeId = mit_dict:lookup(type, Type),
-	transform(T, [{device_kind, TypeId},{olt_type,Type},{olt_state,1}|Acc]);
+	transform(T, [{device_kind, TypeId},{olt_type,Type}|Acc]);
 transform([H|T], Acc) ->
     transform(T, [H | Acc]);
 
