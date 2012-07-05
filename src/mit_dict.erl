@@ -73,13 +73,18 @@ start_link() ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    ets:new(mit_dic_typeid, [set, protected, named_table]),
-    ets:new(mit_dic_idtype, [set, protected, named_table]),
-    ets:new(mit_dic_manuid, [set, protected, named_table]),
-    ets:new(mit_dic_idmanu, [set, protected, named_table]),
-    ets:new(mit_dic_tid2vid, [set, protected, named_table]),
-    init_cache(),
-    io:format("finish start mit dict...~n",[]),
+    case mnesia:system_info(extra_db_nodes) of
+        [] -> %master node
+            ets:new(mit_dic_typeid, [set, protected, named_table]),
+            ets:new(mit_dic_idtype, [set, protected, named_table]),
+            ets:new(mit_dic_manuid, [set, protected, named_table]),
+            ets:new(mit_dic_idmanu, [set, protected, named_table]),
+            ets:new(mit_dic_tid2vid, [set, protected, named_table]),
+            init_cache(),
+            io:format("finish start mit dict...~n",[]);
+        _ -> %slave node
+            ok
+    end,
     {ok, state}.
 
 init_cache() ->

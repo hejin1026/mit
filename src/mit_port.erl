@@ -155,17 +155,24 @@ update(Dn, Attrs) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    case  do_init() of
-        {ok, State} ->
-            io:format("finish start mit port...~n",[]),
-            {ok, State};
-        {error, Reason} ->
-            ?ERROR("mit_port start failure...",[]),
-            {stop, Reason}
-    end.
+    case mnesia:system_info(extra_db_nodes) of
+        [] -> %master node
+            case  do_init() of
+                {ok, State} ->
+                    io:format("finish start mit port...~n",[]),
+                    {ok, State};
+                {error, Reason} ->
+                    ?ERROR("mit_port start failure...",[]),
+                    {stop, Reason}
+            end;
+        _ -> %slave node
+            ok
+    end,
+    {ok, state}.
+    
 
 do_init() ->
-    {ok, Ports} = emysql:select({mit_ports, mem_attrs()}),
+    {ok, Ports} = emysql:select({mit_ports, mem_attrs(), {'in', port_category, [1,2]}}),
     do_init(Ports),
     {ok, state}.
 
