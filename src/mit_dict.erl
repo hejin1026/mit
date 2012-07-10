@@ -31,7 +31,7 @@ lookup(type, Name) ->
 lookup(Dn) ->
     case mnesia:dirty_read(dict, Dn) of
         [Dict] ->
-            {ok, Dict#dict.value};
+            Dict#dict.value;
         [] ->
             []
     end.
@@ -50,7 +50,7 @@ init([]) ->
     case mnesia:system_info(extra_db_nodes) of
         [] -> %master node
             {atomic, ok} = mnesia:create_table(dict,
-                [{ram_copies, [node()]}, {index, [id, name]},
+                [{ram_copies, [node()]}, 
                  {attributes, record_info(fields, dict)}]),
             init_cache(),
             io:format("finish start mit dict...~n",[]);
@@ -72,7 +72,7 @@ store(Type, Records) ->
        case dataset:get_value(code_name, Record) of
        {value, CodeName} ->
            IdDn = lists:concat([Type, "=", Id]),
-           NameDn = Type ++ "=" ++ binary_to_list(CodeName),
+           NameDn = lists:concat([Type, "=", binary_to_list(CodeName)]),
            mnesia:sync_dirty(fun() ->
                 mnesia:write(#dict{dn=IdDn, value=CodeName, type=Type}),
                 mnesia:write(#dict{dn=NameDn, value=Id, type=Type})
