@@ -169,7 +169,7 @@ init([]) ->
             ok
     end,
     {ok, state}.
-    
+
 
 do_init() ->
     {ok, Ports} = emysql:select({mit_ports, mem_attrs(),{device_type,1}}),
@@ -313,8 +313,8 @@ update_port(Dn, OldAttrs, Attrs) ->
 
 add_splite(PonDn,Port)->
 	?INFO("add_splite ~p,~p", [PonDn,Port]),
-	{value, DeviceType} = dataset:get_value(device_type, Port),
-	{value, PortCategory} = dataset:get_value(port_category, Port),
+	{value, DeviceType} = dataset:get_value(device_type, Port,0),
+	{value, PortCategory} = dataset:get_value(port_category, Port,0),
 	{value, PonId} = dataset:get_value(id, Port),
 	{value, OltId} = dataset:get_value(device_id, Port),
 	{value, PortName} = dataset:get_value(port_name, Port),
