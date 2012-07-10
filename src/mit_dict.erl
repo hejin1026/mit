@@ -31,7 +31,7 @@ lookup(type, Name) ->
 lookup(Dn) ->
     case mnesia:dirty_read(dict, Dn) of
         [Dict] ->
-            {Dict#dict.value};
+            Dict#dict.value;
         [] ->
             []
     end.
@@ -50,7 +50,7 @@ init([]) ->
     case mnesia:system_info(extra_db_nodes) of
         [] -> %master node
             {atomic, ok} = mnesia:create_table(dict,
-                [{ram_copies, [node()]}, 
+                [{ram_copies, [node()]},
                  {attributes, record_info(fields, dict)}]),
             init_cache(),
             io:format("finish start mit dict...~n",[]);
