@@ -31,7 +31,7 @@ lookup(type, Name) ->
 lookup(Dn) ->
     case mnesia:dirty_read(dict, Dn) of
         [Dict] ->
-            Dict#dict.value;
+            {Dict#dict.value};
         [] ->
             []
     end.
