@@ -67,7 +67,7 @@ nid(undefined) ->
     undefined;
 nid(Uid) ->
     [_Type,Id] = string:tokens(binary_to_list(Uid), ":"),
-    Id.
+    list_to_integer(Id).
 
 merge(NewAttrs, OldAttrs) ->
     merge(unchanged, NewAttrs, OldAttrs).
