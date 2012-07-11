@@ -159,11 +159,9 @@ init([]) ->
         [] -> %master node
             case  do_init() of
                 {ok, State} ->
-                    io:format("finish start mit port...~n",[]),
-                    {ok, State};
+                    io:format("finish start mit port...~n",[]);
                 {error, Reason} ->
-                    ?ERROR("mit_port start failure...",[]),
-                    {stop, Reason}
+                    ?ERROR("mit_port start failure...",[])
             end;
         _ -> %slave node
             ok

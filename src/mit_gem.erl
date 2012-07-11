@@ -6,15 +6,11 @@
 -include_lib("elog/include/elog.hrl").
 
 %api
--export([attrs/0,
-         lookup/1,
+-export([lookup/1,
 		 add/2,
 		 update/2]).
 
 -import(extbif, [to_list/1, to_binary/1]).
-
-get_uid(Id) ->
-    list_to_binary("onu:" ++ integer_to_list(Id)).
 
 lookup(Dn) ->
     emysql:select({mit_gems, {gem_dn, Dn}}).
@@ -74,7 +70,7 @@ insert_gem(Dn, Gem) ->
         {value, OltId} = dataset:get_value(id, Olt),
         OnuId = get_onu_id(OltDn, SlotNo, PortNo, OnuNo),
         DateTime = {datetime, calendar:local_time()},
-        case emysql:insert(mit_gems, [{created_at, DateTime}, {updated_at, DateTime}, {olt_id, OltId}, {onu_id, OnuId} | Gem]) of
+        case emysql:insert(mit_gems, [{created_at, DateTime}, {gem_dn, Dn}, {olt_id, OltId}, {onu_id, OnuId} | Gem]) of
             {updated, _} ->
                 ok;
             {error, Reason} ->

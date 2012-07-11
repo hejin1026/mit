@@ -7,8 +7,7 @@
 
 
 %api
--export([attrs/0,
-         lookup/1,
+-export([lookup/1,
 		 add/2,
 		 update/2]).
 
@@ -33,41 +32,6 @@ update(Dn, Attrs) ->
         {error, _} ->
             ?ERROR("cannot find vlan ~p", [Dn])
     end.
-
-do_init() ->
-    case emysql:select({mit_vlans, attrs()}) of
-    {ok, Vlans} ->
-        lists:foreach(fun(Vlan) ->
-            {value, OltId} = dataset:get_value(olt_id, Vlan),
-            {value, SlotNo} = dataset:get_value(slot_no, Vlan),
-            {value, PortNo} = dataset:get_value(port_no, Vlan),
-            {value, OnuNo} = dataset:get_value(onu_no, Vlan),
-            {value, GemNo} = dataset:get_value(gem_no, Vlan),
-            {value, VlanType} = dataset:get_value(vlan_type, Vlan),
-            OltUid = mit_util:uid(olt, OltId),
-            case mit:lookup(id, to_binary(OltUid)) of
-            {ok, #entry{dn = OltDn}} ->
-                {value, VlanId} = dataset:get_value(id, Vlan),
-                VlanUid = "vlan:" ++ integer_to_list(VlanId),
-                VlanDn = lists:concat(["vlan=", VlanType, ",",
-                                        "gem=", GemNo, ",",
-                                        "onu=", OnuNo, ",",
-                                        "port=", PortNo, ",",
-                                        "slot=", SlotNo, ",",
-                                        to_list(OltDn)]),
-                mit:update(#entry{dn = to_binary(VlanDn), uid = to_binary(VlanUid),
-                    type = vlan, parent = mit_util:bdn(VlanDn), data = Vlan});
-            false ->
-                io:format("cannot find olt: ~p", [OltId])
-            end
-        end, Vlans),
-        io:format("finish start vlan : ~p ~n", [length(Vlans)]),
-        {ok, state};
-    {error, Reason} ->
-        ?ERROR("start failure...",[]),
-        {stop, Reason}
-    end.
-
 
 
 update_vlan(Dn, OldAttrs, Attrs) ->
@@ -110,7 +74,7 @@ insert_vlan(Dn, Vlan) ->
                                 to_list(OltDn)]),
         GemId = get_gem_id(GemDn),
         DateTime = {datetime, calendar:local_time()},
-        case emysql:insert(mit_vlans, [{created_at, DateTime}, {updated_at, DateTime}, {olt_id, OltId},{gem_id, GemId} | Vlan]) of
+        case emysql:insert(mit_vlans, [{created_at, DateTime}, {vlan_dn, Dn},{olt_id, OltId},{gem_id, GemId} | Vlan]) of
             {updated, _} ->
                 ok;
             {error, Reason} ->
