@@ -96,7 +96,7 @@ mem_attrs() ->
 	 splite_id,
      device_name,
      adminstate,
-     onlinestatus,
+     operstate,
      authmacaddr,
      authmacsn,
      collect_type,
