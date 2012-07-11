@@ -45,8 +45,4 @@ worker() ->
 
     Fiber = {mit_fiber, {mit_fiber, start_link, []},permanent, 10, worker, [mit_fiber]},
 
-    Gem = {mit_gem, {mit_gem, start_link, []},permanent, 10, worker, [mit_gem]},
-
-    Vlan = {mit_vlan, {mit_vlan, start_link, []},permanent, 10, worker, [mit_vlan]},
-
-    [Mit, Dict, Olt, Onu,Eoc,Cpe, Board, Port,Splite, Fiber, Gem, Vlan].
+    [Mit, Dict, Olt, Onu,Eoc,Cpe, Board, Port,Splite, Fiber].

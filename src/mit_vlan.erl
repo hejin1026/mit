@@ -5,10 +5,6 @@
 -include("mit.hrl").
 -include_lib("elog/include/elog.hrl").
 
--behavior(gen_server).
-
--export([start_link/0,
-         stop/0]).
 
 %api
 -export([attrs/0,
@@ -16,61 +12,27 @@
 		 add/2,
 		 update/2]).
 
--export([init/1,
-		 handle_call/3,
-		 handle_cast/2,
-		 handle_info/2,
-		 terminate/2,
-		 code_change/3]).
-
 -import(extbif, [to_list/1, to_binary/1]).
-
-start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
-
-stop() ->
-	gen_server:call(?MODULE, stop).
-
-attrs() ->
-    [
-        id,
-        line_profile,
-        vlan_type,
-        olt_id,
-        slot_no,
-        port_no,
-        onu_no,
-        gem_no,
-        gem_id,
-        mapping_no
-    ].
 
 
 lookup(Dn) ->
-    case mit:lookup(Dn) of
-    {ok, #entry{data = Vlan, type = vlan}} ->
-        {ok, Vlan};
-    false ->
-        false;
-    _Other ->
-        false
-    end.
+    emysql:select({mit_vlans, {vlan_dn, Dn}}).
 
 add(Dn, Vlan) ->
-	gen_server:cast(?MODULE, {add, Dn, Vlan}).
+    case lookup(to_binary(Dn)) of
+        {ok, OldData} ->
+            update_vlan(Dn, OldData, Vlan);
+        {error, _} ->
+            insert_vlan(Dn, Vlan)
+    end.
 
 update(Dn, Attrs) ->
-    gen_server:cast(?MODULE, {update, Dn, Attrs}).
-
-init([]) ->
-    case mnesia:system_info(extra_db_nodes) of
-        [] -> %master node
-            do_init();
-        _ -> %slave node
-            ok
-    end,
-    {ok, state}.
-
+    case lookup(Dn) of
+        {ok, OldAttrs} ->
+            update_vlan(Dn, OldAttrs, Attrs);
+        {error, _} ->
+            ?ERROR("cannot find vlan ~p", [Dn])
+    end.
 
 do_init() ->
     case emysql:select({mit_vlans, attrs()}) of
@@ -107,49 +69,6 @@ do_init() ->
     end.
 
 
-handle_call(stop, _From, State) ->
-	{stop, normal, ok, State};
-
-handle_call(Request, _From, State) ->
-	?ERROR("unexpected requrest: ~n", [Request]),
-    {reply, {error, unexpected_request}, State}.
-
-
-
-
-handle_cast({add, Dn, Data}, State) ->
-    case lookup(to_binary(Dn)) of
-    {ok, OldData} ->
-        update_vlan(Dn, OldData, Data);
-    false ->
-        insert_vlan(Dn, Data)
-    end,
-    {noreply, State};
-
-handle_cast({update, Dn, Attrs}, State) ->
-    case lookup(Dn) of
-    {ok, OldAttrs} ->
-        update_vlan(Dn, OldAttrs, Attrs);
-    false ->
-        ?ERROR("cannot find vlan ~p", [Dn])
-    end,
-    {noreply, State};
-
-handle_cast(Msg, State) ->
-	?ERROR("unexpected msg: ~p", [Msg]),
-    {noreply, State}.
-
-handle_info(Info, State) ->
-    ?ERROR("unexpected info: ~p", [Info]),
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-
 
 update_vlan(Dn, OldAttrs, Attrs) ->
     %重新发现后可以知道gem
@@ -164,12 +83,9 @@ update_vlan(Dn, OldAttrs, Attrs) ->
             {value, VlanId} = dataset:get_value(id, OldAttrs),
             LastChanged = {datetime, calendar:local_time()},
             MergedAttrs2 = lists:keydelete(id, 1, MergedAttrs),
-            case emysql:update(mit_vlans, [{updated_at, LastChanged} | MergedAttrs], {id, VlanId}) of
-                {updated, {1, _Id}} -> %update mit cache
-                    mit:update(#entry{dn = Dn, uid = mit_util:uid(vlan, VlanId), type = vlan, parent = mit_util:bdn(Dn),
-                        data = [{id, VlanId}|MergedAttrs2]});
-                {updated, {0, _}} -> %stale port?
-                    ?WARNING("stale port: ~p", [Dn]);
+            case emysql:update(mit_vlans, [{updated_at, LastChanged} | MergedAttrs2], {id, VlanId}) of
+                {updated, _} ->
+                    ok;
                 {error, Reason} ->
                     ?ERROR("~p", [Reason])
                 end;
@@ -195,9 +111,8 @@ insert_vlan(Dn, Vlan) ->
         GemId = get_gem_id(GemDn),
         DateTime = {datetime, calendar:local_time()},
         case emysql:insert(mit_vlans, [{created_at, DateTime}, {updated_at, DateTime}, {olt_id, OltId},{gem_id, GemId} | Vlan]) of
-            {updated, {1, Id}} ->
-                mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(vlan, Id),
-                            type = vlan, parent = mit_util:bdn(Dn), data = [{id, Id}|Vlan]});
+            {updated, _} ->
+                ok;
             {error, Reason} ->
                 ?WARNING("~p", [Reason])
             end;
@@ -210,6 +125,6 @@ get_gem_id(GemDn) ->
         {ok, Gem} ->
             {value, Id} = dataset:get_value(id, Gem, -1),
             Id;
-         false -> 
+        {error, _} ->
              ?WARNING("cannot find gem_id:~p",[GemDn]), 0
      end.
