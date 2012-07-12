@@ -20,7 +20,7 @@ add(Dn, Vlan) ->
     case lookup(to_binary(Dn)) of
         {ok, []} ->
             insert_vlan(Dn, Vlan);
-        {ok, OldData} ->
+        {ok, [OldData]} ->
             update_vlan(Dn, OldData, Vlan);
         {error, _} ->
             ?WARNING("select vlan error:~p",[Dn])
