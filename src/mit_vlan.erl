@@ -79,9 +79,9 @@ insert_vlan(Dn, Vlan) ->
 
 get_gem_id(GemDn) ->
     case mit_gem:lookup(to_binary(GemDn)) of
-        {ok, Gem} ->
+        {ok, [Gem]} ->
             {value, Id} = dataset:get_value(id, Gem, -1),
             Id;
-        {error, _} ->
+        _ ->
              ?WARNING("cannot find gem_id:~p",[GemDn]), 0
      end.
