@@ -7,29 +7,21 @@
 
 %api
 -export([lookup/1,
-		 add/2,
-		 update/2]).
+		 add/2]).
 
 -import(extbif, [to_list/1, to_binary/1]).
 
 lookup(Dn) ->
     emysql:select({mit_gems, {gem_dn, Dn}}).
 
-
 add(GemDn, Gem) ->
     case lookup(GemDn) of
-        {ok, OldGem} ->
+        {ok, []} ->
+            insert_gem(GemDn, Gem);
+        {ok, [OldGem]} ->
             update_gem(GemDn, OldGem, Gem);
         {error, _} ->
-            insert_gem(GemDn, Gem)
-    end.
-
-update(GemDn, Attrs) ->
-    case lookup(GemDn) of
-        {ok, OldAttrs} ->
-            update_gem(GemDn, OldAttrs, Attrs);
-        {error, _} ->
-            ?ERROR("cannot find gem ~p", [GemDn])
+            ?WARNING("select gem error:~p",[GemDn])
     end.
 
 

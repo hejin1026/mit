@@ -8,8 +8,7 @@
 
 %api
 -export([lookup/1,
-		 add/2,
-		 update/2]).
+		 add/2]).
 
 -import(extbif, [to_list/1, to_binary/1]).
 
@@ -19,18 +18,12 @@ lookup(Dn) ->
 
 add(Dn, Vlan) ->
     case lookup(to_binary(Dn)) of
+        {ok, []} ->
+            insert_vlan(Dn, Vlan);
         {ok, OldData} ->
             update_vlan(Dn, OldData, Vlan);
         {error, _} ->
-            insert_vlan(Dn, Vlan)
-    end.
-
-update(Dn, Attrs) ->
-    case lookup(Dn) of
-        {ok, OldAttrs} ->
-            update_vlan(Dn, OldAttrs, Attrs);
-        {error, _} ->
-            ?ERROR("cannot find vlan ~p", [Dn])
+            ?WARNING("select vlan error:~p",[Dn])
     end.
 
 

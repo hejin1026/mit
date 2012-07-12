@@ -95,7 +95,9 @@ handle_data({operate, Operate}) ->
     ?INFO("get parse operate :~p",[Operate]),
 	handle_operate(Operate);
 handle_data({hostinfo, HostInfo}) ->
-    handle_hostinfo(HostInfo).
+    handle_hostinfo(HostInfo);
+handle_data(_) ->
+    ok.
 
 handle_operate(Operate)	->
     DateTime = {datetime, {date(), time()}},
