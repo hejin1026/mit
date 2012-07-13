@@ -28,8 +28,7 @@
 %api
 -export([get_notify_entry/1,
          lookup/1,
-		 add/2,
-		 update/2]).
+		 add/2]).
 
 -export([init/1,
 		 handle_call/3,
@@ -144,9 +143,6 @@ lookup(Dn) ->
 add(Dn, Attrs) ->
     gen_server:cast(?MODULE, {add, Dn, Attrs}).
 
-update(Dn, Attrs) ->
-    gen_server:cast(?MODULE, {update, Dn, Attrs}).
-
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
 %%                         {ok, State, Timeout} |
@@ -220,17 +216,6 @@ handle_cast({add, Dn, Port}, State) ->
     end,
     {noreply, State};
 
-handle_cast({update, Dn, Attrs}, State) ->
-    %?INFO("~p,new data :~p", [?MODULE, Attrs]),
-    case lookup(Dn) of
-        {ok, OldAttrs} ->
-            %?INFO("~p,old data :~p", [?MODULE, OldAttrs]),
-            update_port(Dn, OldAttrs, Attrs);
-        false ->
-            ?ERROR("cannot find port: ~p", [Dn])
-    end,
-    {noreply, State};
-
 handle_cast(Msg, State) ->
 	?ERROR("unexpected msg: ~p", [Msg]),
     {noreply, State}.
@@ -262,27 +247,54 @@ insert_port(Dn, Port) ->
             {value, Id} = dataset:get_value(id, Entry),
             {value, DeviceManu} = dataset:get_value(device_manu, Entry),
             DevType = mit_util:get_type(Type),
-            DateTime = {datetime, calendar:local_time()},
+            {value, PortIndex} = dataset:get_value(port_index, Port),
 
-            MustInfo = [{device_type, DevType}, {device_id, Id},{device_manu,DeviceManu}, {created_at, DateTime}],
+            MustInfo = [{device_type, DevType}, {device_id, Id},{device_manu,DeviceManu}],
 	        MayInfo = case dataset:get_value(cityid, Entry) of
                 {value, CityId} -> [{cityid, CityId}];
                 {false, _} -> []
             end,
 
 			PortInfo = MustInfo ++ MayInfo ++  Port,
-            case emysql:insert(mit_ports, PortInfo) of
-                {updated, {0, _}} ->
-                    ?WARNING("cannot inserted port: ~p ~p", [Dn, Port]);
-                {updated, {1, PId}} ->
-                    mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,PId), type = port,
-                        parent = mit_util:bdn(Dn), data = [{id, PId}|PortInfo]}),
-					add_splite(Dn,[{id, PId}|PortInfo]); %每加入一个PON口，同时生成一个一级分光器，直接挂在pon下
-                {error, Reason} ->
-                    ?WARNING("~p", [Reason])
+
+            case DevType of
+                1 ->
+                    do_insert_port(Dn, PortInfo);
+                _ ->
+                    case select_port(Id, DevType, PortIndex) of
+                        {ok, []} ->
+                            insert_port2(PortInfo);
+                        {ok, [OldPortInfo]} ->
+                            update_port2(OldPortInfo, PortInfo);
+                        {error, _} ->
+                            ?ERROR("select onu port error:~p", [PortInfo])
+                    end
             end;
         false ->
             ?WARNING("cannot find entry: ~p", [Bdn])
+    end.
+
+select_port(Id, DevType, PortIndex) ->
+    emysql:select({mit_ports, {'and', {'and', {port_index, PortIndex}, {device_type, DevType}}, {device_id, Id}}}).
+
+do_insert_port(Dn, PortInfo) ->
+    case emysql:insert(mit_ports, [{created_at, {datetime, calendar:local_time()}}| PortInfo]) of
+        {updated, {0, _}} ->
+            ?WARNING("cannot inserted port: ~p ~p", [PortInfo]);
+        {updated, {1, PId}} ->
+            mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,PId), type = port,
+                parent = mit_util:bdn(Dn), data = [{id, PId}|PortInfo]}),
+            add_splite(Dn,[{id, PId}|PortInfo]); %每加入一个PON口，同时生成一个一级分光器，直接挂在pon下
+        {error, Reason} ->
+            ?WARNING("~p", [Reason])
+    end.
+
+insert_port2(PortInfo) ->
+    case emysql:insert(mit_ports, PortInfo) of
+        {updated, _} ->
+            ok;
+        {error, Reason} ->
+            ?WARNING("~p", [Reason])
     end.
 
 update_port(Dn, OldAttrs, Attrs) ->
@@ -306,6 +318,24 @@ update_port(Dn, OldAttrs, Attrs) ->
             ok
     end.
 
+update_port2(OldAttrs, Attrs) ->
+    case mit_util:merge(Attrs, OldAttrs) of
+        {changed, MergedAttrs} ->
+            {value, Id} = dataset:get_value(id, OldAttrs),
+            % ?WARNING("info :update port: ~p, ~p", [Dn, MergedAttrs]),
+            Datetime = {datetime, calendar:local_time()},
+            MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
+            MergedAttrs2 = lists:keydelete(means, 1, MergedAttrs1),
+            case emysql:update(mit_ports, [{updated_at, Datetime} | MergedAttrs2], {id, Id}) of
+                {updated, _} ->
+                    ok;
+                {error, Reason} ->
+                    ?ERROR("~p", [Reason])
+            end;
+        {unchanged, _} ->
+            ok
+    end.
+
 add_splite(PonDn,Port)->
 	?INFO("add_splite ~p,~p", [PonDn,Port]),
 	{value, DeviceType} = dataset:get_value(device_type, Port,0),
@@ -317,14 +347,6 @@ add_splite(PonDn,Port)->
 			mit_splite:add(PonDn,[{pon_id,PonId},{olt_id,OltId},{split_name,PortName},{splitter_level,1}]);
 		true -> ignore
 	end.
-
-
-
-
-
-
-
-
 
 
 
