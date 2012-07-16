@@ -103,9 +103,10 @@ do_sync_entry(port, Record) ->
 
 do_sync_entry(Type, Record) ->
     {value, Id} = dataset:get_value(id, Record),
+    {value, Ip} = dataset:get_value(ip, Record, undefined),
     Entry = mit_util:notify_entry(Type, Record),
     {value, Dn} = dataset:get_value(dn, Entry),
-    mit:update(#entry{dn = Dn, uid = mit_util:uid(Type, Id), parent = mit_util:bdn(Dn),
+    mit:update(#entry{dn = Dn, uid = mit_util:uid(Type, Id), ip= Ip, parent = mit_util:bdn(Dn),
         type = Type, data = mit_util:mit_entry(Type, Record)}),
     ?INFO("sync event ~p", [Dn]),
     mit_event:notify({present, Dn, Entry}).
