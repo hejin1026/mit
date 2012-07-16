@@ -93,7 +93,7 @@ init([]) ->
             ok
     end,
     {ok, state}.
-    
+
 
 do_init() ->
     {ok, Boards} = emysql:select({mit_boards, attrs()}),
@@ -209,7 +209,7 @@ update_board(Dn, OldAttrs, Attrs) ->
     case mit_util:merge(Attrs, OldAttrs) of
     {changed, MergedAttrs} ->
         % ?INFO("update_board: ~p", [Dn]),
-        {value, Id} = dataset:get_value(id, OldAttrs),
+        {value, Id} = dataset:get_value(id, MergedAttrs,0),
         Datetime = {datetime, calendar:local_time()},
         MergedAttrs2 = lists:keydelete(id, 1, MergedAttrs),
         case emysql:update(mit_boards, [{updated_at, Datetime} | MergedAttrs2], {id, Id}) of
