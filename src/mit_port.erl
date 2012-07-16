@@ -28,7 +28,8 @@
 %api
 -export([get_notify_entry/1,
          lookup/1,
-		 add/2]).
+		 add/2,
+         update/2]).
 
 -export([init/1,
 		 handle_call/3,
@@ -143,6 +144,9 @@ lookup(Dn) ->
 add(Dn, Attrs) ->
     gen_server:cast(?MODULE, {add, Dn, Attrs}).
 
+update(Dn, Attrs) ->
+    gen_server:cast(?MODULE, {update, Dn, Attrs}).
+
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
 %%                         {ok, State, Timeout} |
@@ -213,6 +217,15 @@ handle_cast({add, Dn, Port}, State) ->
             update_port(Dn, OldPort, Port);
         false ->
             insert_port(Dn, Port)
+    end,
+    {noreply, State};
+
+handle_cast({update, Dn, Attrs}, State) ->
+    case lookup(Dn) of
+        {ok, OldAttrs} ->
+            update_port(Dn, OldAttrs, Attrs);
+        false ->
+            ?ERROR("cannot find onu ~p", [Dn])
     end,
     {noreply, State};
 
