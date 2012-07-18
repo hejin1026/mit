@@ -29,6 +29,7 @@
 -export([get_notify_entry/1,
          lookup/1,
 		 add/2,
+		 update_ports/2,
          update/2]).
 
 -export([init/1,
@@ -141,8 +142,24 @@ lookup(Dn) ->
             false
     end.
 
+
+lookup_from_emysql(Onu) ->
+ 	{value, DevId} = dataset:get_value(id, Onu),
+		case emysql:select({mit_onus, {'and',[{device_id, DevId},{device_type,2}]}}) of
+				{ok, []} ->
+			          false;
+			    {ok, OldPorts} ->
+			          {ok,OldPorts};
+		     	{error, _} ->
+			         ?WARNING("select port error dn:~p",[Onu]),
+					 false
+				end.
+
 add(Dn, Attrs) ->
     gen_server:cast(?MODULE, {add, Dn, Attrs}).
+
+update_ports(Onu,Ports)->
+	gen_server:cast(?MODULE, {update_ports, Onu, Ports}).
 
 update(Dn, Attrs) ->
     gen_server:cast(?MODULE, {update, Dn, Attrs}).
@@ -228,7 +245,14 @@ handle_cast({update, Dn, Attrs}, State) ->
             ?ERROR("cannot find onu ~p", [Dn])
     end,
     {noreply, State};
-
+handle_cast({update_ports, Onu, Ports}, State) ->
+    case lookup_from_emysql(Onu) of
+        {ok, OldPorts} ->
+            do_update_port(Ports,OldPorts);
+        false ->
+            ?ERROR("cannot find onu ports ~p", [Onu])
+    end,
+    {noreply, State};
 handle_cast(Msg, State) ->
 	?ERROR("unexpected msg: ~p", [Msg]),
     {noreply, State}.
@@ -261,24 +285,21 @@ insert_port(Dn, Port) ->
             {value, DeviceManu} = dataset:get_value(device_manu, Entry),
             DevType = mit_util:get_type(Type),
             {value, PortIndex} = dataset:get_value(port_index, Port),
-
             MustInfo = [{device_type, DevType}, {device_id, Id},{device_manu,DeviceManu}],
 	        MayInfo = case dataset:get_value(cityid, Entry) of
                 {value, CityId} -> [{cityid, CityId}];
                 {false, _} -> []
             end,
-
 			PortInfo = MustInfo ++ MayInfo ++  Port,
-
             case DevType of
                 1 ->
                     do_insert_port(Dn, PortInfo);
                 _ ->
                     case select_port(Id, DevType, PortIndex) of
                         {ok, []} ->
-                            insert_port2(PortInfo);
+                            insert_port2(PortInfo);%不写entry
                         {ok, [OldPortInfo]} ->
-                            update_port2(OldPortInfo, PortInfo);
+                            update_port2(OldPortInfo, PortInfo);%不写entry
                         {error, _} ->
                             ?ERROR("select onu port error:~p", [PortInfo])
                     end
@@ -302,6 +323,7 @@ do_insert_port(Dn, PortInfo) ->
             ?WARNING("~p", [Reason])
     end.
 
+%不写entry
 insert_port2(PortInfo) ->
     case emysql:insert(mit_ports, PortInfo) of
         {updated, _} ->
@@ -331,6 +353,8 @@ update_port(Dn, OldAttrs, Attrs) ->
             ok
     end.
 
+
+%不写entry
 update_port2(OldAttrs, Attrs) ->
     case mit_util:merge(Attrs, OldAttrs) of
         {changed, MergedAttrs} ->
@@ -360,6 +384,41 @@ add_splite(PonDn,Port)->
 			mit_splite:add(PonDn,[{pon_id,PonId},{olt_id,OltId},{split_name,PortName},{splitter_level,1}]);
 		true -> ignore
 	end.
+
+
+do_update_port([Port|T], OldPorts) ->
+    case dataset:get_value(port_index, Port,false) of
+    {value, false} ->
+        ?WARNING("no index in port ~p", [Port]);
+    {ok, PortIndex} ->
+		case find_port_from_index(PortIndex,OldPorts) of
+			false -> ?WARNING("can not find port ~p", [Port]);
+			OldPort -> update_port2(OldPort,Port)
+		end
+    end,
+    do_update_port(T,OldPorts);
+
+do_update_port([], _OldPorts) ->
+	    ok.
+
+
+find_port_from_index(Index,[OldPort|OldPorts]) ->
+	Is_true = lists:member({port_index,PortIndex},OldPort),
+	if Is_true -> OldPort;
+		true -> find_port_from_index(PortIndex,OldPorts)
+	end;
+
+find_port_from_index(_,[]) ->
+	false.
+
+
+
+
+
+
+
+
+
 
 
 
