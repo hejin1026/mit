@@ -446,7 +446,7 @@ batch_update_port([Port|T], OldPorts) ->
 			OldPort -> update_port2(OldPort,Port)
 		end
     end,
-    do_update_port(T,OldPorts).
+    batch_update_port(T,OldPorts).
 
 
 
