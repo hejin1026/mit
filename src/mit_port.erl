@@ -161,6 +161,9 @@ add(Dn, Attrs) ->
 update_ports(Onu,Ports)->
 	gen_server:cast(?MODULE, {update_ports, Onu, Ports}).
 
+add_ports(Onu,Ports)->
+	gen_server:cast(?MODULE, {add_ports, Onu, Ports}).
+
 update(Dn, Attrs) ->
     gen_server:cast(?MODULE, {update, Dn, Attrs}).
 
@@ -247,12 +250,31 @@ handle_cast({update, Dn, Attrs}, State) ->
     {noreply, State};
 handle_cast({update_ports, Onu, Ports}, State) ->
     case lookup_from_emysql(Onu) of
-        {ok, OldPorts} ->
-            do_update_port(Ports,OldPorts);
+        {ok, Records} ->
+			OldPorts = [{proplists:get_value(port_index, R), R} || R <- Records],
+            batch_update_port(Ports,OldPorts);
         false ->
             ?ERROR("cannot find onu ports ~p", [Onu])
     end,
     {noreply, State};
+
+handle_cast({add_ports, Dn, Ports}, State) ->
+ case mit:lookup(Dn) of
+        {ok, #entry{type = onu, data = Onu} = _} ->
+    		case lookup_from_emysql(Onu) of
+        			{ok, Records} ->
+						NewPorts = [{proplists:get_value(port_index, R), R} || R <- Ports],
+						OldPorts = [{proplists:get_value(port_index, R), R} || R <- Records],
+            			batch_insert_port(Onu,NewPorts,OldPorts);
+        			false ->
+            			?WARNING("cannot find onu ports ~p", [Onu])
+    		end;
+	    false ->
+        	?WARNING("cannot find entry: ~p", [Dn])
+end,
+    {noreply, State};
+
+
 handle_cast(Msg, State) ->
 	?ERROR("unexpected msg: ~p", [Msg]),
     {noreply, State}.
@@ -385,31 +407,48 @@ add_splite(PonDn,Port)->
 		true -> ignore
 	end.
 
+batch_insert_port(Onu,NewPorts,OldPorts)->
+	DeviceManu = proplists:get_value(device_manu, Onu,0),
+		CityId = proplists:get_value(cityid, Onu,0),
+		OnuId = proplists:get_value(id, Onu,0),
+	NewIdxList = [Idx || {Idx, _} <- NewPorts],
+	OldIdxList = [Idx || {Idx, _} <- OldPorts],
+	{Added, Updated, Deleted} = extlib:list_compare(NewIdxList, OldIdxList),
+	%added
+	lists:foreach(fun(Idx) ->
+	MustInfo = [{device_type, 2}, {device_id, OnuId},{device_manu,DeviceManu},{cityid,CityId}],
+	NewPort = proplists:get_value(Idx, NewPorts),
+	case emysql:insert(mit_ports, MustInfo++NewPort) of
+		{error, Err} -> ?ERROR("insert port error ~p", [Err]);
+		_ -> ok
+	end
+	end, Added),
+	%updated
+	lists:foreach(fun(Idx) ->
+	NewPort = proplists:get_value(Idx, NewPorts),
+	OldPort = proplists:get_value(Idx, OldPorts),
+	update_port2(OldPort, NewPort)
+	end, Updated),
+	%deleted
+	?WARNING("deleted ports index~p",[Deleted]).
 
-do_update_port([Port|T], OldPorts) ->
+
+batch_update_port([], _OldPorts) ->
+		    ok;
+
+batch_update_port([Port|T], OldPorts) ->
     case dataset:get_value(port_index, Port,false) of
     {value, false} ->
         ?WARNING("no index in port ~p", [Port]);
     {ok, PortIndex} ->
-		case find_port_from_index(PortIndex,OldPorts) of
-			false -> ?WARNING("can not find port ~p", [Port]);
+		case proplists:get_value(PortIndex, OldPorts,false) of
+			false -> ?WARNING("can not find port ~p,index:~p", [Port,PortIndex]);
 			OldPort -> update_port2(OldPort,Port)
 		end
     end,
-    do_update_port(T,OldPorts);
-
-do_update_port([], _OldPorts) ->
-	    ok.
+    do_update_port(T,OldPorts).
 
 
-find_port_from_index(Index,[OldPort|OldPorts]) ->
-	Is_true = lists:member({port_index,PortIndex},OldPort),
-	if Is_true -> OldPort;
-		true -> find_port_from_index(PortIndex,OldPorts)
-	end;
-
-find_port_from_index(_,[]) ->
-	false.
 
 
 

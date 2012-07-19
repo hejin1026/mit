@@ -75,6 +75,9 @@ handle_datalist(DataList) when is_list(DataList) ->
 handle_datalist(Data)  ->
     handle_data(Data).
 
+
+handle_data({entry, Type, Dn, []}) ->
+	 ?WARNING("get disco data is [] dn:~p,Type:",[Dn,Type]);
 handle_data({entry, olt, Dn, Attrs}) ->
     mit_olt:add(Dn, Attrs);
 handle_data({entry, onu, Dn, Attrs})->
@@ -83,6 +86,8 @@ handle_data({entry, board, Dn, Attrs}) ->
     mit_board:add(Dn, Attrs);
 handle_data({entry, port, Dn, Attrs}) ->
 	mit_port:add(Dn, Attrs);
+handle_data({entry, add_ports, Dn, Attrs}) ->
+	mit_port:add_ports(Dn, Attrs);%批量add 用户口 一个onu一次，dn为onu
 handle_data({entry, eoc, Dn, Attrs}) ->
 	mit_eoc:add(Dn, Attrs);
 handle_data({entry, cpe, Dn, Attrs}) ->
@@ -92,12 +97,12 @@ handle_data({entry, gem, Dn, Attrs}) ->
 handle_data({entry, vlan, Dn, Attrs}) ->
     mit_vlan:add(Dn, Attrs);
 handle_data({operate, Operate}) ->
-    ?INFO("get parse operate :~p",[Operate]),
 	handle_operate(Operate);
 handle_data({hostinfo, HostInfo}) ->
     handle_hostinfo(HostInfo);
-handle_data(_) ->
-    ok.
+handle_data(Data) ->
+   ?ERROR("mit error parse :~p", [Data]).
+
 
 handle_operate(Operate)	->
     DateTime = {datetime, {date(), time()}},
