@@ -417,6 +417,7 @@ batch_insert_port(Onu,NewPorts,OldPorts)->
 	OldIdxList = [Idx || {Idx, _} <- OldPorts],
 	{Added, Updated, Deleted} = extlib:list_compare(NewIdxList, OldIdxList),
 	%added
+	Added0 = lists:dropwhile(fun(I)->I==undefined end),
 	lists:foreach(fun(Idx) ->
 	MustInfo = [{device_type, 2}, {device_id, OnuId},{device_manu,DeviceManu},{cityid,CityId}],
 	NewPort = proplists:get_value(Idx, NewPorts),
@@ -424,7 +425,7 @@ batch_insert_port(Onu,NewPorts,OldPorts)->
 		{error, Err} -> ?ERROR("insert port error ~p", [Err]);
 		_ -> ok
 	end
-	end, Added),
+	end, Added0),
 	%updated
 	lists:foreach(fun(Idx) ->
 	NewPort = proplists:get_value(Idx, NewPorts),
