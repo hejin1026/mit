@@ -430,7 +430,7 @@ batch_insert_port(Onu,NewPorts,OldPorts)->
 	update_port2(OldPort, NewPort)
 	end, Updated),
 	%deleted
-	?WARNING("deleted ports index~p",[Deleted]).
+	?WARNING("deleted ports onu ~p,index~p",[Onu,Deleted]).
 
 
 batch_update_port([], _OldPorts) ->
