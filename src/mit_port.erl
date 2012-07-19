@@ -187,7 +187,7 @@ init([]) ->
 					{stop, Reason}
             end;
         _ -> %slave node
-            {ok, state}.
+            {ok, state}
     end.
 
 
