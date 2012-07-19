@@ -179,7 +179,7 @@ init([]) ->
     case mnesia:system_info(extra_db_nodes) of
         [] -> %master node
             case  do_init() of
-                {ok, State} ->
+                {ok, _State} ->
                     io:format("finish start mit port...~n",[]),
 					{ok, state};
                 {error, Reason} ->
