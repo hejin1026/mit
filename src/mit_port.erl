@@ -29,6 +29,7 @@
 -export([get_notify_entry/1,
          lookup/1,
 		 add/2,
+		 add_ports/2,
 		 update_ports/2,
          update/2]).
 
@@ -179,14 +180,15 @@ init([]) ->
         [] -> %master node
             case  do_init() of
                 {ok, State} ->
-                    io:format("finish start mit port...~n",[]);
+                    io:format("finish start mit port...~n",[]),
+					{ok, state};
                 {error, Reason} ->
-                    ?ERROR("mit_port start failure...",[])
+                    ?ERROR("mit_port start failure...",[]),
+					{stop, Reason}
             end;
         _ -> %slave node
-            ok
-    end,
-    {ok, state}.
+            {ok, state}.
+    end.
 
 
 do_init() ->
