@@ -146,7 +146,7 @@ lookup(Dn) ->
 
 lookup_from_emysql(Onu) ->
  	{value, DevId} = dataset:get_value(id, Onu),
-		case emysql:select({mit_onus, {'and',[{device_id, DevId},{device_type,2}]}}) of
+		case emysql:select({mit_ports, {'and',[{device_id, DevId},{device_type,2}]}}) of
 				{ok, []} ->
 			          false;
 			    {ok, OldPorts} ->
@@ -253,7 +253,8 @@ handle_cast({update, Dn, Attrs}, State) ->
 handle_cast({update_ports, Onu, Ports}, State) ->
     case lookup_from_emysql(Onu) of
         {ok, Records} ->
-			OldPorts = [{proplists:get_value(port_index, R), R} || R <- Records],
+			OldPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Records],
+			?INFO("batch_update_port ~p", [Ports]),
             batch_update_port(Ports,OldPorts);
         false ->
             ?ERROR("cannot find onu ports ~p", [Onu])
@@ -265,8 +266,8 @@ handle_cast({add_ports, Dn, Ports}, State) ->
         {ok, #entry{type = onu, data = Onu} = _} ->
     		case lookup_from_emysql(Onu) of
         			{ok, Records} ->
-						NewPorts = [{proplists:get_value(port_index, R), R} || R <- Ports],
-						OldPorts = [{proplists:get_value(port_index, R), R} || R <- Records],
+						NewPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Ports],
+						OldPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Records],
             			batch_insert_port(Onu,NewPorts,OldPorts);
         			false ->
             			?WARNING("cannot find onu ports ~p", [Onu])
@@ -417,7 +418,7 @@ batch_insert_port(Onu,NewPorts,OldPorts)->
 	OldIdxList = [Idx || {Idx, _} <- OldPorts],
 	{Added, Updated, Deleted} = extlib:list_compare(NewIdxList, OldIdxList),
 	%added
-	Added0 = lists:dropwhile(fun(I)->I==undefined end),
+	Added0 = lists:dropwhile(fun(I)->I=="undefined" end,Added),
 	lists:foreach(fun(Idx) ->
 	MustInfo = [{device_type, 2}, {device_id, OnuId},{device_manu,DeviceManu},{cityid,CityId}],
 	NewPort = proplists:get_value(Idx, NewPorts),
@@ -443,8 +444,8 @@ batch_update_port([Port|T], OldPorts) ->
     case dataset:get_value(port_index, Port,false) of
     {value, false} ->
         ?WARNING("no index in port ~p", [Port]);
-    {ok, PortIndex} ->
-		case proplists:get_value(PortIndex, OldPorts,false) of
+    {value, PortIndex} ->
+		case proplists:get_value(to_list(PortIndex), OldPorts,false) of
 			false -> ?WARNING("can not find port ~p,index:~p", [Port,PortIndex]);
 			OldPort -> update_port2(OldPort,Port)
 		end
