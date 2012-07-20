@@ -100,8 +100,8 @@ handle_data({operate, Operate}) ->
 	handle_operate(Operate);
 handle_data({hostinfo, HostInfo}) ->
     handle_hostinfo(HostInfo);
-handle_data(Data) ->
-   ?WARNING("mit error parse :~p", [Data]).
+handle_data(_) ->
+   ok.
 
 
 handle_operate(Operate)	->
