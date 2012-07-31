@@ -95,7 +95,7 @@ handle_info(load_areas, State) ->
 			        {value, Id} = dataset:get_value(id, Area),
 			        {value, Name} = dataset:get_value(area_name, Area),
 		           mnesia:sync_dirty(fun() ->
-		                mnesia:write(#area{dn=Dn, id=Id, name=Name,data=Area}),
+		                mnesia:write(#area{dn=Dn, id=Id, name=Name,data=Area})
 		            end)
 			    end, Areas),
 			 	?WARNING("normal load areas   ~p",[length(Areas)]);
