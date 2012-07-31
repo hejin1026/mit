@@ -100,7 +100,7 @@ handle_info(load_areas, State) ->
 			    end, Areas),
 			 	?WARNING("normal load areas   ~p",[length(Areas)]);
         {error, Reason} ->
-            ?ERROR("load areas failure...~p",[Reason]),
+            ?ERROR("load areas failure...~p",[Reason])
 		end,
     erlang:send_after(1440000, self(), load_areas),
     {noreply, State};
