@@ -97,6 +97,7 @@ handle_data({entry, gem, Dn, Attrs}) ->
 handle_data({entry, vlan, Dn, Attrs}) ->
     mit_vlan:add(Dn, Attrs);
 handle_data({operate, Operate}) ->
+	?ERROR("operate_data normal :~p, ~n", [Operate]),
 	handle_operate(Operate);
 handle_data({hostinfo, HostInfo}) ->
     handle_hostinfo(HostInfo);

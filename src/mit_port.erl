@@ -309,7 +309,7 @@ insert_port(Dn, Port) ->
             {value, Id} = dataset:get_value(id, Entry),
             {value, DeviceManu} = dataset:get_value(device_manu, Entry),
             DevType = mit_util:get_type(Type),
-            {value, PortIndex} = dataset:get_value(port_index, Port),
+            {value, PortIndex} = dataset:get_value(port_index, Port,0),
             MustInfo = [{device_type, DevType}, {device_id, Id},{device_manu,DeviceManu}],
 	        MayInfo = case dataset:get_value(cityid, Entry) of
                 {value, CityId} -> [{cityid, CityId}];
