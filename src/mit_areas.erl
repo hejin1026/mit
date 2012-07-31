@@ -1,12 +1,3 @@
-%%%----------------------------------------------------------------------
-%%% File : mit_site.erl
-%%% Author : Ery Lee <ery.lee@gmail.com>
-%%% Purpose : mit site
-%%% Created : 25 Arg 2009
-%%% License : http://www.opengoss.com/license
-%%%
-%%% Copyright (C) 2007-2009, www.opengoss.com
-%%%----------------------------------------------------------------------
 -module(mit_areas).
 
 -author('chibj.opengoss@gmail.com').
@@ -105,7 +96,7 @@ handle_info(load_areas, State) ->
 			        {value, Name} = dataset:get_value(area_name, Area),
 		           mnesia:sync_dirty(fun() ->
 		                mnesia:write(#area{dn=Dn, id=Id, name=Name,data=Area}),
-		            end);
+		            end)
 			    end, Areas),
 			 	?WARNING("normal load areas   ~p",[length(Areas)]);
         {error, Reason} ->
