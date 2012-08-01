@@ -118,7 +118,7 @@ area_type(5) -> building;
 area_type(Level) -> Level.
 
 find_area(Id) ->
-    find_area(lookup(id,Id), []).
+    find_area(lookup(Id), []).
 
 find_area(false, Acc) ->
     Acc;
