@@ -109,29 +109,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-<<<<<<< HEAD
-
-lookup(Dn) ->
-   	lookup(dn,Dn).
-
-lookup(dn,Dn) ->
-   	case mnesia:dirty_read(areas, Dn) of
-        [Area] ->
-            Area#area.data;
-        [] ->
-            []
-    end;
-lookup(id,Id) ->
-   case mnesia:dirty_index_read(areas, Id, #area.id) of
-    [Area] ->
-        Area#area.data;
-    [_Area|_] ->
-        false;
-    [] ->
-        false
-    end.
-
-%interface for evabus_filter
 area_type(0) -> province;
 area_type(1) -> city;
 area_type(2) -> town;
