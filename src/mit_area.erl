@@ -159,7 +159,7 @@ find_area_info(branchid,Id,Acc) ->
 		false ->Acc;
 		Area->
 			{value, TownId} = dataset:get_value(parent_id, Area),
-			Acc++[{branchid,Id},{townId,TownId}]
+			Acc++[{townId,TownId},{branchid,Id}]
 	end.
 
 

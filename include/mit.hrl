@@ -15,3 +15,6 @@
 %%example: {entry, <<"onu=1,olt=2">>, <<"onu:1">>, onu, [{id, 1}, {ip, "10.10.10.10"}]}
 -record(entry, {dn, uid, ip, parent = <<"">>, type, data}).
 
+-record(areas, {dn, uid, entranceid,branchid,townid, cityid, type, data}).
+
+
