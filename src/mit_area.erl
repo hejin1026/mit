@@ -1,4 +1,3 @@
-
 -module(mit_area).
 
 -author('chibj.opengoss@gmail.com').
@@ -125,8 +124,8 @@ find_area(false, Acc) ->
     Acc;
 find_area(#area{type=city} = Area, Acc) ->
     [Area|Acc];
-find_area(#area{paren_id=PId} = Area, Acc) ->
+find_area(#area{parent_id=PId} = Area, Acc) ->
     find_area(lookup(PId), [Area|Acc]).
 
 find_area_id(Id) ->
-    [{Area#area.type, Area#area.id} || Area <-- find_area(Id)].
+    [{Area#area.type, Area#area.id} || Area <- find_area(Id)].
