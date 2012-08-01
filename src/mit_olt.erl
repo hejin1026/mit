@@ -87,6 +87,7 @@ attrs() ->
 mem_attrs() ->
     [id,
      cityid,
+     branch_id,
      sysoid,
      name,
      ip,
