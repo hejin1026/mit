@@ -4,7 +4,7 @@
 
 -behavior(gen_server).
 
--export([find_area/1, find_area_id/1,
+-export([find_area/1, find_area_path/1,
         lookup/1, lookup/2]).
 
 -export([start_link/0, stop/0]).
@@ -150,5 +150,5 @@ find_area(#area{type=city} = Area, Acc) ->
 find_area(#area{parent_id=PId} = Area, Acc) ->
     find_area(lookup(PId), [Area|Acc]).
 
-find_area_id(Id) ->
+find_area_path(Id) ->
     [{Area#area.type, Area#area.id} || Area <- find_area(Id)].
