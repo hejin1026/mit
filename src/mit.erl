@@ -202,7 +202,7 @@ handle_change(?MIT_DELETE, {AtomType, DevId}, _ChangedLog) ->
         ?ERROR("mit delete :~p", [{AtomType, DevId}]),
         mit_event:notify({delete, Dn}),
         delete(dn, Dn);
-    [] ->
+    false ->
         ok
     end;
 
