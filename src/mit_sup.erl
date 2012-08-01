@@ -43,6 +43,8 @@ worker() ->
 
 	Cpe = {mit_cpe, {mit_cpe, start_link, []},permanent, 10, worker, [mit_cpe]},
 
+	Area = {mit_area, {mit_area, start_link, []},permanent, 10, worker, [mit_area]},
+
     Fiber = {mit_fiber, {mit_fiber, start_link, []},permanent, 10, worker, [mit_fiber]},
 
-    [Mit, Dict, Olt, Onu,Eoc,Cpe, Board, Port,Splite, Fiber].
+    [Mit, Dict, Olt, Onu,Eoc,Cpe,Area,Board,Port,Splite, Fiber].
