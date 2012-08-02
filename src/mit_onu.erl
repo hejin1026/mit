@@ -180,26 +180,22 @@ init([]) ->
 
 
 do_init() ->
-    case emysql:select({mit_onus, mem_attrs()}) of
+    case emysql:sqlquery("select t.ip as olt_ip,o.* from mit_onus o LEFT join mit_olts t on t.id = o.olt_id ") of
         {ok, Onus} ->
+            io:format("start mem onu : ~p ~n", []),
             lists:foreach(fun(Onu) ->
                   {value, Id} = dataset:get_value(id, Onu),
-                  {value, OltId} = dataset:get_value(olt_id, Onu),
+                  {value, OltIp} = dataset:get_value(olt_ip, Onu),
                   Entry = case dataset:get_value(ip, Onu) of
                       {value, Ip} ->
-                          #entry{uid = mit_util:uid(onu,Id), ip=Ip, type = onu, data = Onu};
+                          #entry{uid = mit_util:uid(onu,Id), ip=Ip, type = onu, data = get_entry(Onu)};
                       {false, _} ->
-                          #entry{uid = mit_util:uid(onu,Id), type = onu, data = Onu}
+                          #entry{uid = mit_util:uid(onu,Id), type = onu, data = get_entry(Onu)}
                    end,
                   {value, Rdn} = dataset:get_value(rdn, Onu),
-                  case mit:lookup(id, to_binary("olt:" ++ integer_to_list(OltId))) of
-                      {ok, #entry{dn = OltDn, data = Olt}} ->
-                          {value, OltIp} = dataset:get_value(ip, Olt),
-                          Dn = lists:concat(["onu=", to_list(Rdn), ",", "olt=", to_list(OltIp)]),
-                          mit:update(Entry#entry{dn = to_binary(Dn), parent = OltDn});
-                      false ->
-                          ignore
-                  end
+                  OltDn = lists:concat(["olt=", to_list(OltIp)]),
+                  Dn = lists:concat(["onu=", to_list(Rdn),",", OltDn]),
+                  mit:update(Entry#entry{dn = to_binary(Dn), parent = OltDn})
           end, Onus),
           io:format("finish start onu : ~p ~n", [length(Onus)]),
           {ok, state};

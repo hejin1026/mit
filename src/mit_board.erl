@@ -96,22 +96,18 @@ init([]) ->
 
 
 do_init() ->
-    {ok, Boards} = emysql:select({mit_boards, attrs()}),
+    {ok, Boards} = emysql:sqlquery("select t.ip as olt_ip,o.* from mit_boards o LEFT join mit_olts t on t.id = o.device_id  where o.device_type = 1"),
+    io:format("start mem board ...", []),
     lists:foreach(fun(Board) ->
-        {value, DevId} = dataset:get_value(device_id, Board),
-        {value, DevType} = dataset:get_value(device_type, Board),
-        Uid = mit_util:uid(mit_util:get_type(DevType), DevId),
-        case mit:lookup(id, Uid) of
-        {ok, #entry{dn=Bdn} = _} ->
-			{value, Id} = dataset:get_value(id, Board),
-			Buid = "slot:" ++ integer_to_list(Id),
-			{value, Boardid} = dataset:get_value(boardid, Board),
-			Rdn = "slot=" ++ to_list(Boardid),
-            Dn = Rdn ++ "," ++ to_list(Bdn),
-            mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = Bdn, type = board, data = Board});
-        false ->
-            ignore
-        end
+        {value, OltIp} = dataset:get_value(olt_ip, Board),
+        OltDn = lists:concat(["olt=", to_list(OltIp)]),
+        {value, Id} = dataset:get_value(id, Board),
+        Buid = "slot:" ++ integer_to_list(Id),
+        {value, Boardid} = dataset:get_value(boardid, Board),
+        Rdn = "slot=" ++ to_list(Boardid),
+        Dn = Rdn ++ "," ++ to_list(OltDn),
+        mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = OltDn,
+            type = board, data = mit_util:format(mit, mem_attrs(), Board)})
     end, Boards),
     io:format("finish start board : ~p ~n", [length(Boards)]),
     {ok, state}.

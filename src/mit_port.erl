@@ -192,21 +192,17 @@ init([]) ->
 
 
 do_init() ->
-    {ok, Ports} = emysql:select({mit_ports, mem_attrs(),{device_type,1}}),
+    {ok, Ports} = emysql:sqlquery("select t.ip as olt_ip,p.* from mit_ports p LEFT join mit_olts t on t.id = p.device_id  where p.device_type = 1"),
+    io:format("start mem port ...", []),
     lists:foreach(fun(Port) ->
-        {value, DevId} = dataset:get_value(device_id, Port),
-        {value, DevType} = dataset:get_value(device_type, Port),
-        DevUid = mit_util:uid(DevType, DevId),
-        case mit:lookup(id, to_binary(DevUid)) of
-            {ok, #entry{dn = DevDn}} ->
-                {value, Id} = dataset:get_value(id, Port),
-                {value, PortIndex} = dataset:get_value(port_index, Port),
-                Rdn = "port=" ++ to_list(PortIndex),
-                Dn = Rdn ++ "," ++ binary_to_list(DevDn),
-                mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,Id),
-                    type = port, parent = DevDn, data = Port});
-            false -> ingore
-        end
+        {value, OltIp} = dataset:get_value(olt_ip, Port),
+        OltDn = lists:concat(["olt=", to_list(OltIp)]),
+        {value, Id} = dataset:get_value(id, Port),
+        {value, PortIndex} = dataset:get_value(port_index, Port),
+        Rdn = "port=" ++ to_list(PortIndex),
+        Dn = Rdn ++ "," ++ binary_to_list(OltDn),
+        mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,Id),
+            type = port, parent = OltDn, data = mit_util:format(mit, mem_attrs(), Port)})
     end, Ports),
     {ok, state}.
 

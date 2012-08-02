@@ -84,7 +84,9 @@ do_init() ->
                             ParentDn = "splite=" ++ to_list(ParentId) ++ "," ++ to_list(PonDn),
                             mit:update(#entry{dn = to_binary(SpliteDn), uid = SpliteUid,
                                 type = splite, parent = to_binary(ParentDn), data = Splite})
-                    end
+                    end;
+                 _ ->
+                     ignore
              end
         end, Splites),
         {ok, state};
