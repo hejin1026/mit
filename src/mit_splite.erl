@@ -54,45 +54,9 @@ lookup(Dn) ->
 
 
 init([]) ->
-    ?INFO("start mit splite...",[]),
-    case mnesia:system_info(extra_db_nodes) of
-        [] -> %master node
-            do_init();
-        _ -> %slave node
-            ok
-    end,
     {ok, state}.
 
 
-do_init() ->
-    case emysql:select({mit_splites, attrs()}) of
-    {ok, Splites} ->
-        lists:foreach(fun(Splite) ->
-            {value, Id} = dataset:get_value(id, Splite),
-            {value, ParentId} = dataset:get_value(parent_split, Splite, null),
-            {value, PonId} = dataset:get_value(pon_id, Splite, null),
-            SpliteUid = mit_util:uid(splite, Id),
-            case mit:lookup(id, to_binary("port:" ++ to_list(PonId))) of
-                {ok, #entry{dn = PonDn}} ->
-                    SpliteDn = "splite=" ++ to_list(Id) ++ "," ++  to_list(PonDn),
-                    case ParentId of
-                        null ->
-%                            ?INFO("level 1 splite :~p, ~p", [SpliteDn, Splite]),
-                            mit:update(#entry{dn = to_binary(SpliteDn), uid = SpliteUid,
-                                type = splite, parent = mit_util:bdn(SpliteDn), data = Splite});
-                        _ ->
-                            ParentDn = "splite=" ++ to_list(ParentId) ++ "," ++ to_list(PonDn),
-                            mit:update(#entry{dn = to_binary(SpliteDn), uid = SpliteUid,
-                                type = splite, parent = to_binary(ParentDn), data = Splite})
-                    end;
-                 _ ->
-                     ignore
-             end
-        end, Splites),
-        {ok, state};
-    {error, Reason} ->
-        {stop, Reason}
-    end.
 
 handle_call(stop, _From, State) ->
 	{stop, normal, ok, State};
