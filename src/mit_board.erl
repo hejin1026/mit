@@ -107,7 +107,7 @@ do_init() ->
         Rdn = "slot=" ++ to_list(Boardid),
         Dn = Rdn ++ "," ++ to_list(OltDn),
         mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = OltDn,
-            type = board, data = mit_util:format(mit, mem_attrs(), Board)})
+            type = board, data = mit_util:format(mit, attrs(), Board)})
     end, Boards),
     io:format("finish start board : ~p ~n", [length(Boards)]),
     {ok, state}.
