@@ -416,12 +416,12 @@ batch_insert_port(Onu,NewPorts,OldPorts)->
 	%added
 	Added0 = lists:dropwhile(fun(I)->I=="undefined" end,Added),
 	lists:foreach(fun(Idx) ->
-	MustInfo = [{device_type, 2}, {device_id, OnuId},{device_manu,DeviceManu},{cityid,CityId}],
-	NewPort = proplists:get_value(Idx, NewPorts),
-	case emysql:insert(mit_ports, MustInfo++NewPort) of
-		{error, Err} -> ?ERROR("insert port error ~p", [Err]);
-		_ -> ok
-	end
+        MustInfo = [{device_type, 2}, {device_id, OnuId},{device_manu,DeviceManu},{cityid,CityId}],
+        NewPort = proplists:get_value(Idx, NewPorts),
+        case emysql:insert(mit_ports, MustInfo++NewPort) of
+            {error, Err} -> ?ERROR("insert port error ~p", [Err]);
+            _ -> ok
+        end
 	end, Added0),
 	%updated
 	lists:foreach(fun(Idx) ->
