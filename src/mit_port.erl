@@ -276,7 +276,7 @@ update_ports(Onu, Ports) ->
     end.
 
 
-add_ports(Onu, Ports) ->
+add_ports(Dn, Ports) ->
 	 case mit:lookup(Dn) of
 	        {ok, #entry{type = onu, data = Onu} = _} ->
 	    		case lookup_from_emysql(Onu) of
