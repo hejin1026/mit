@@ -243,7 +243,7 @@ handle_cast({update, Dn, Attrs}, State) ->
     {noreply, State};
 
 
-update_ports(Dn, Ports) ->
+update_ports(Onu, Ports) ->
 	case lookup_from_emysql(Onu) of
         {ok, Records} ->
 			OldPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Records],
