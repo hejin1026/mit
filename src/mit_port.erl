@@ -242,7 +242,29 @@ handle_cast({update, Dn, Attrs}, State) ->
     end,
     {noreply, State};
 
+handle_cast(Msg, State) ->
+	?ERROR("unexpected msg: ~p", [Msg]),
+    {noreply, State}.
 
+%%--------------------------------------------------------------------
+%% Function: handle_info(Info, State) -> {noreply, State} |
+%%                                       {noreply, State, Timeout} |
+%%                                       {stop, Reason, State}
+%% Description: Handling all non call/cast messages
+%%--------------------------------------------------------------------
+handle_info(Info, State) ->
+    ?ERROR("unexpected info: ~p", [Info]),
+    {noreply, State}.
+
+terminate(_Reason, _State) ->
+    ok.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+%%--------------------------------------------------------------------
+%%% Internal functions
+%%--------------------------------------------------------------------
 update_ports(Onu, Ports) ->
 	case lookup_from_emysql(Onu) of
         {ok, Records} ->
@@ -271,30 +293,6 @@ add_ports(Onu, Ports) ->
 	end.
 
 
-
-handle_cast(Msg, State) ->
-	?ERROR("unexpected msg: ~p", [Msg]),
-    {noreply, State}.
-
-%%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%%--------------------------------------------------------------------
-handle_info(Info, State) ->
-    ?ERROR("unexpected info: ~p", [Info]),
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-%%--------------------------------------------------------------------
-%%% Internal functions
-%%--------------------------------------------------------------------
 insert_port(Dn, Port) ->
     Bdn = mit_util:bdn(Dn),
     case mit:lookup(Bdn) of
