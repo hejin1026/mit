@@ -182,7 +182,7 @@ init([]) ->
 do_init() ->
     case emysql:sqlquery("select t.ip as olt_ip,o.* from mit_onus o LEFT join mit_olts t on t.id = o.olt_id ") of
         {ok, Onus} ->
-            io:format("start mem onu : ~p ~n", []),
+            io:format("start mem onu ~n", []),
             lists:foreach(fun(Onu) ->
                   {value, Id} = dataset:get_value(id, Onu),
                   {value, OltIp} = dataset:get_value(olt_ip, Onu),

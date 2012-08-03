@@ -107,7 +107,7 @@ do_init() ->
         Rdn = "slot=" ++ to_list(Boardid),
         Dn = Rdn ++ "," ++ to_list(OltDn),
         mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = OltDn,
-            type = board, data = mit_util:format(mit, mem_attrs(), Board)})
+            type = board, data = mit_util:format(mit, attrs(), Board)})
     end, Boards),
     io:format("finish start board : ~p ~n", [length(Boards)]),
     {ok, state}.
@@ -139,7 +139,12 @@ handle_cast({add, Dn, Attrs}, State) ->
     {ok, OldAttrs} ->
         update_board(Dn, OldAttrs, Attrs);
     false ->
-        insert_board(Dn, Attrs)
+        case lookup_from_mysql(Dn) of
+            false ->
+                insert_board(Dn, Attrs);
+            _ ->
+                ok
+        end
     end,
     {noreply, State};
 
@@ -221,3 +226,29 @@ update_board(Dn, OldAttrs, Attrs) ->
     {unchanged, _} ->
         ok
     end.
+
+
+
+lookup_from_mysql(Dn) ->
+    Bdn = mit_util:bdn(Dn),
+    case mit:lookup(Bdn) of
+        {ok, #entry{data = Entry, type = Type} = _} ->
+            {value, DevId} = dataset:get_value(id, Entry),
+            DevType = case Type of
+                olt -> 1;
+                onu -> 2
+             end,
+            case emysql:select({mit_boards, {'and',[{device_id, DevId},{device_type, DevType}]}}) of
+                {ok, []} ->
+                      false;
+                {ok, _OldBoards} ->
+                      true;
+                {error, _} ->
+                     ?WARNING("select port error dn:~p",[Dn]),
+                     ignore
+            end;
+    false ->
+        false
+    end.
+    
+            
