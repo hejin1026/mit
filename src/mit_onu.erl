@@ -160,6 +160,7 @@ add(Dn, Onu) ->
 	gen_server:cast(?MODULE, {add, Dn, Onu}).
 
 update(Dn, Attrs) ->
+	?ERROR("update find onu ~p,~p", [Dn,Attrs]),
     gen_server:cast(?MODULE, {update, Dn, Attrs}).
 
 %%--------------------------------------------------------------------

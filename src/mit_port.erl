@@ -159,11 +159,6 @@ lookup_from_emysql(Onu) ->
 add(Dn, Attrs) ->
     gen_server:cast(?MODULE, {add, Dn, Attrs}).
 
-update_ports(Onu,Ports)->
-	gen_server:cast(?MODULE, {update_ports, Onu, Ports}).
-
-add_ports(Onu,Ports)->
-	gen_server:cast(?MODULE, {add_ports, Onu, Ports}).
 
 update(Dn, Attrs) ->
     gen_server:cast(?MODULE, {update, Dn, Attrs}).
@@ -246,33 +241,35 @@ handle_cast({update, Dn, Attrs}, State) ->
             ?ERROR("cannot find onu ~p", [Dn])
     end,
     {noreply, State};
-handle_cast({update_ports, Onu, Ports}, State) ->
-    case lookup_from_emysql(Onu) of
+
+
+update_ports(Dn, Ports) ->
+	case lookup_from_emysql(Onu) of
         {ok, Records} ->
 			OldPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Records],
 			?INFO("batch_update_port ~p", [Ports]),
             batch_update_port(Ports,OldPorts);
         false ->
             ?ERROR("cannot find onu ports ~p", [Onu])
-    end,
-    {noreply, State};
+    end.
 
-handle_cast({add_ports, Dn, Ports}, State) ->
- case mit:lookup(Dn) of
-        {ok, #entry{type = onu, data = Onu} = _} ->
-    		case lookup_from_emysql(Onu) of
-        			{ok, Records} ->
-						NewPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Ports],
-						OldPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Records],
-            			batch_insert_port(Onu,NewPorts,OldPorts);
-        			false ->
-            			NewPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Ports],
-            			batch_insert_port(Onu,NewPorts,[])
-    		end;
-	    false ->
-        	?WARNING("cannot find entry: ~p", [Dn])
-end,
-    {noreply, State};
+
+add_ports(Onu, Ports) ->
+	 case mit:lookup(Dn) of
+	        {ok, #entry{type = onu, data = Onu} = _} ->
+	    		case lookup_from_emysql(Onu) of
+	        			{ok, Records} ->
+							NewPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Ports],
+							OldPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Records],
+	            			batch_insert_port(Onu,NewPorts,OldPorts);
+	        			false ->
+	            			NewPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Ports],
+	            			batch_insert_port(Onu,NewPorts,[])
+	    		end;
+		    false ->
+	        	?WARNING("cannot find entry: ~p", [Dn])
+	end.
+
 
 
 handle_cast(Msg, State) ->
