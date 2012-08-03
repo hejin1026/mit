@@ -266,7 +266,8 @@ handle_cast({add_ports, Dn, Ports}, State) ->
 						OldPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Records],
             			batch_insert_port(Onu,NewPorts,OldPorts);
         			false ->
-            			?WARNING("cannot find onu ports ~p", [Onu])
+            			NewPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Ports],
+            			batch_insert_port(Onu,NewPorts,[])
     		end;
 	    false ->
         	?WARNING("cannot find entry: ~p", [Dn])

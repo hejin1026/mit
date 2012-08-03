@@ -127,9 +127,14 @@ find_area(#area{type=city} = Area, Acc) ->
 find_area(#area{parent_id=PId} = Area, Acc) ->
     find_area(lookup(PId), [Area|Acc]).
 
-find_area_path(Id) ->
+
+find_area_id(Id) ->
     [{Area#area.type, Area#area.id} || Area <- find_area(Id)].
 
 find_area_name(Id) ->
     [{Area#area.type, Area#area.name} || Area <- find_area(Id)].
+
+%evabus_filter interface
+find_area_path(Id) ->
+    [{Area#area.type, Area#area.id} || Area <- find_area(Id)].
 

@@ -73,10 +73,6 @@ handle_cast(Msg, State) ->
 	?ERROR("unexpected msg: ~p", [Msg]),
     {noreply, State}.
 
-handle_info(update, State) ->
-    do_init(),
-    timer:send_after(30 * 60 * 1000, self(), update),
-    {noreply, State};
 
 handle_info(Info, State) ->
     ?ERROR("unexpected info: ~p", [Info]),
