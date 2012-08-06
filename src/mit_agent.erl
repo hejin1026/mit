@@ -89,7 +89,7 @@ handle_data({entry, port, Dn, Attrs}) ->
 handle_data({entry, ports, Dn, Attrs}) ->%批量add 用户口 一个onu一次，dn为onu
 	Fun = fun() ->
 			try mit_port:add_ports(Dn, Attrs)  catch
-				_:Err ->?ERROR("bad error: ~p,~p", [Err,Attrs,Dn])
+				_:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Attrs,Dn])
 			end
 		  end,
 	worker_pool:submit_async(Fun);
