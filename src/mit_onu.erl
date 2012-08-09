@@ -179,7 +179,7 @@ add_onus(OltDn, Onus) ->
         {ok, #entry{uid = OltId, data = Olt}} ->
             {ok, OnusInDb} = emysql:select(mit_onus,{olt_id, mit_util:nid(OltId)}),
             OnuList = [{to_binary(proplists:get_value(rdn,Onu)), transform(Onu)} || Onu <- Onus],
-            OnuDbList = [{to_binary(proplists:get_value(rdn,Onu)), transform(Onu)} || Onu <- OnusInDb],
+            OnuDbList = [{to_binary(proplists:get_value(rdn,Onu)), get_entry(Onu)} || Onu <- OnusInDb],
             {AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(OnuList), mit_util:get_key(OnuDbList)),
             [insert_onu(Olt, proplists:get_value(Rdn, OnuList)) || Rdn <- AddList],
             [update_onu(get_dn2(OltDn, Rdn), proplists:get_value(Rdn, OnuDbList), proplists:get_value(Rdn, OnuList)) ||
@@ -257,11 +257,11 @@ update_onu(Dn, OldAttrs, Attrs) ->
     end.
 
 do_operstart_for_huawei(OldAttrs,MergedAttrs0) ->
-	 ?INFO("do_operstart_for_huawei OldAttrs:~p~n,MergedAttrs: ~p ~n",  OldAttrs, MergedAttrs0]),
+	 ?INFO("do_operstart_for_huawei OldAttrs:~p~n,MergedAttrs: ~p ~n",  [OldAttrs, MergedAttrs0]),
 	{value, OldOper} = dataset:get_value(operstate, OldAttrs, 0),
     {value, NewOper} = dataset:get_value(operstate, MergedAttrs0,1),
 	if NewOper==3 andalso OldOper==2 ->
-		 ?WARNING("find exception operstate when update onu. OldAttrs:~p~n,MergedAttrs: ~p ~n",  OldAttrs, MergedAttrs0]),
+		 ?WARNING("find exception operstate when update onu. OldAttrs:~p~n,MergedAttrs: ~p ~n",  [OldAttrs, MergedAttrs0]),
 		lists:keyreplace(operstate, 1, MergedAttrs0, {operstate, 2});
 		true-> MergedAttrs0
 	end.
