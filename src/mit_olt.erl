@@ -1,25 +1,13 @@
-%%%----------------------------------------------------------------------
-%%% File    : mit_olt.erl
-%%% Author  : Ery Lee <ery.lee@gmail.com>
-%%% Purpose : olt management
-%%% Created : 28 Nov 2009
-%%% License : http://www.opengoss.com/
-%%%
-%%% Copyright (C) 2007-2009, www.opengoss.com
-%%%----------------------------------------------------------------------
 -module(mit_olt).
 
--author('ery.lee@gmail.com').
+-create("hejin 2012-8-8").
 
 -include("mit.hrl").
 -include_lib("elog/include/elog.hrl").
 
 -import(extbif, [to_binary/1, to_list/1]).
 
--behavior(gen_server).
-
--export([start_link/0,
-         stop/0]).
+-mit_boot_load({olt, load, "loading olt", undefined}).
 
 -export([all/0,
          one/1,
@@ -33,26 +21,7 @@
          add/2,
          update/2]).
 
--export([init/1,
-		 handle_call/3,
-		 handle_cast/2,
-		 handle_info/2,
-		 terminate/2,
-		 code_change/3]).
-
 -define(SERVER, ?MODULE).
-
-%%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
-%%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-stop() ->
-	gen_server:call(?SERVER, stop).
-
-
 
 all() ->
     Sql = "select t2.means as means, t1.*,'olt' device_type   from mit_olts t1 LEFT join collect_means t2 on
@@ -123,33 +92,7 @@ lookup(Dn) ->
         false
     end.
 
-add(Dn, Attrs) ->
-    gen_server:cast(?SERVER, {add, Dn, Attrs}).
-
-update(Dn, Attrs) ->
-    gen_server:cast(?SERVER, {update, Dn, Attrs}).
-
-
-%%====================================================================
-%% gen_server callbacks
-%%====================================================================
-%%--------------------------------------------------------------------
-%% Function: init(Args) -> {ok, State} |
-%%                         {ok, State, Timeout} |
-%%                         ignore               |
-%%                         {stop, Reason}
-%% Description: Initiates the server
-%%--------------------------------------------------------------------
-init([]) ->
-    case mnesia:system_info(extra_db_nodes) of
-        [] -> %master node
-            do_init();
-        _ -> %slave node
-            ok
-    end,
-    {ok, state}.
-
-do_init() ->
+load() ->
     case emysql:select({mit_olts, mem_attrs()}) of
         {ok, Olts} ->
             lists:foreach(fun(Olt) ->
@@ -166,71 +109,23 @@ do_init() ->
             {stop, Reason}
     end.
 
-%%--------------------------------------------------------------------
-%% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
-%%                                      {reply, Reply, State, Timeout} |
-%%                                      {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, Reply, State} |
-%%                                      {stop, Reason, State}
-%% Description: Handling call messages
-%%--------------------------------------------------------------------
-handle_call(stop, _From, State) ->
-	{stop, normal, ok, State};
-
-handle_call(Request, _From, State) ->
-	?ERROR("unexpected requrest: ~n", [Request]),
-    {reply, {error, unexpected_request}, State}.
-
-%%--------------------------------------------------------------------
-%% Function: handle_cast(Msg, State) -> {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, State}
-%% Description: Handling cast messages
-%%--------------------------------------------------------------------
-handle_cast({add, Dn, Attrs}, State) ->
+add(Dn, Attrs) ->
     Olt = transform(Attrs),
     case mit:lookup(Dn) of
         {ok, #entry{data = Entry} = _} ->
             update_olt(Dn, Entry, Olt);
         false ->
             insert_olt(Dn, Olt)
-    end,
-    {noreply, State};
+    end.
 
-handle_cast({update, Dn, Attrs}, State) ->
+update(Dn, Attrs) ->
     case mit:lookup(Dn) of
     {ok, #entry{data = Entry} = _} ->
         update_olt(Dn, Entry, Attrs);
     false ->
         ?ERROR("cannot find olt ~p", [Dn])
-    end,
-    {noreply, State};
+    end.
 
-handle_cast(Msg, State) ->
-	?ERROR("unexpected msg: ~p", [Msg]),
-    {noreply, State}.
-
-%%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%%--------------------------------------------------------------------
-
-handle_info(Info, State) ->
-    ?ERROR("unexpected info: ~p", [Info]),
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-%%--------------------------------------------------------------------
-%%% Internal functions
-%%--------------------------------------------------------------------
 insert_olt(Dn, Olt) ->
     CreatedAt = {datetime, calendar:local_time()},
     case emysql:insert(mit_olts, [{created_at, CreatedAt}|Olt]) of

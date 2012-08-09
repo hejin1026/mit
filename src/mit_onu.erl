@@ -1,18 +1,12 @@
-%%%----------------------------------------------------------------------
-%%% File    : mit_onu.erl
-%%% Author  : Ery Lee <ery.lee@gmail.com>
-%%% Purpose : onu mit
-%%% Created : 30 Nov 2009
-%%% License : http://www.opengoss.com
-%%%
-%%% Copyright (C) 2007-2009, www.opengoss.com
-%%%----------------------------------------------------------------------
+
 -module(mit_onu).
 
--author('ery.lee@gmail.com').
+-created("hejin 2012-8-6").
 
 -include("mit.hrl").
 -include_lib("elog/include/elog.hrl").
+
+-mit_boot_load({onu, load, "loading onu", olt}).
 
 -import(extbif, [to_binary/1]).
 
@@ -32,28 +26,10 @@
          get_entry/1,
          get_notify_entry/1,
 		 add/2,
+         add_onus/2,
 		 update/2]).
 
--export([init/1,
-		 handle_call/3,
-		 handle_cast/2,
-		 handle_info/2,
-		 terminate/2,
-		 code_change/3]).
-
 -import(extbif, [to_list/1]).
-
-%%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
-%%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
-
-stop() ->
-	gen_server:call(?MODULE, stop).
-
-
 
 
 all() ->
@@ -111,8 +87,6 @@ mem_attrs() ->
      port_no,
      pvlan,
      rdn,
-     regsn,
-     regstate,
      slot_no,
      upmaximumbw,
      downmaximumbw,
@@ -124,7 +98,6 @@ mem_attrs() ->
      snmp_v,
 	 scenarios
     ].
-
 
 
 get_entry(Onu) ->
@@ -155,35 +128,11 @@ lookup(Dn) ->
         false ->
             false
     end.
-
-add(Dn, Onu) ->
-	gen_server:cast(?MODULE, {add, Dn, Onu}).
-
-update(Dn, Attrs) ->
-	?ERROR("update find onu ~p,~p", [Dn,Attrs]),
-    gen_server:cast(?MODULE, {update, Dn, Attrs}).
-
-%%--------------------------------------------------------------------
-%% Function: init(Args) -> {ok, State} |
-%%                         {ok, State, Timeout} |
-%%                         ignore               |
-%%                         {stop, Reason}
-%% Description: Initiates the server
-%%--------------------------------------------------------------------
-init([]) ->
-    case mnesia:system_info(extra_db_nodes) of
-        [] -> %master node
-            do_init();
-        _ -> %slave node
-            ok
-    end,
-    {ok, state}.
-
-
-do_init() ->
+    
+load() ->
     case emysql:sqlquery("select t.ip as olt_ip,o.* from mit_onus o LEFT join mit_olts t on t.id = o.olt_id ") of
         {ok, Onus} ->
-            io:format("start mem onu ~n", []),
+            ?ERROR("start mem onu ~n", []),
             lists:foreach(fun(Onu) ->
                   {value, Id} = dataset:get_value(id, Onu),
                   {value, OltIp} = dataset:get_value(olt_ip, Onu),
@@ -198,128 +147,97 @@ do_init() ->
                   Dn = lists:concat(["onu=", to_list(Rdn),",", OltDn]),
                   mit:update(Entry#entry{dn = to_binary(Dn), parent = OltDn})
           end, Onus),
-          io:format("finish start onu : ~p ~n", [length(Onus)]),
-          {ok, state};
+          ?ERROR("finish start onu : ~p ~n", [length(Onus)]);
         {error, Reason} ->
-            ?ERROR("mit_onu start failure...~p",[Reason]),
-            {stop, Reason}
+            ?ERROR("mit_onu start failure...~p",[Reason])
     end.
 
-%%--------------------------------------------------------------------
-%% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
-%%                                      {reply, Reply, State, Timeout} |
-%%                                      {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, Reply, State} |
-%%                                      {stop, Reason, State}
-%% Description: Handling call messages
-%%--------------------------------------------------------------------
-handle_call(stop, _From, State) ->
-	{stop, normal, ok, State};
+get_dn(OltIp, Onu) ->
+      {value, Rdn} = dataset:get_value(rdn, Onu),
+      lists:concat(["onu=", to_list(Rdn),",olt=", to_list(OltIp)]).
 
-handle_call(Request, _From, State) ->
-	?ERROR("unexpected requrest: ~n", [Request]),
-    {reply, {error, unexpected_request}, State}.
+get_dn2(OltDn, Rdn) ->
+      lists:concat(["onu=", to_list(Rdn),",", to_list(OltDn)]).
 
-%%--------------------------------------------------------------------
-%% Function: handle_cast(Msg, State) -> {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, State}
-%% Description: Handling cast messages
-%%--------------------------------------------------------------------
-handle_cast({add, Dn, Onu0}, State) ->
+add(Dn, Onu0) ->
     Onu = transform(Onu0),
     case lookup(Dn) of
         {ok, OldOnu} ->
             update_onu(Dn, OldOnu, Onu);
         false ->
-            insert_onu(Dn, Onu)
-    end,
-    {noreply, State};
+            insert_onu(to_binary(Dn), Onu)
+    end.
 
-handle_cast({update, Dn, Attrs}, State) ->
+update(Dn, Attrs) ->
     case lookup(Dn) of
         {ok, OldAttrs} ->
             update_onu(Dn, OldAttrs, Attrs);
         false ->
             ?ERROR("cannot find onu ~p", [Dn])
-    end,
-    {noreply, State};
+    end.
 
-handle_cast(Msg, State) ->
-	?ERROR("unexpected msg: ~p", [Msg]),
-    {noreply, State}.
+add_onus(OltDn, Onus) ->
+    case mit:lookup(OltDn) of
+        {ok, #entry{uid = OltId, data = Olt}} ->
+            {ok, OnusInDb} = emysql:select(mit_onus,{olt_id, mit_util:nid(OltId)}),
+            OnuList = [{to_binary(proplists:get_value(rdn,Onu)), Onu} || Onu <- Onus],
+            OnuDbList = [{to_binary(proplists:get_value(rdn,Onu)), Onu} || Onu <- OnusInDb],
+            {AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(OnuList), mit_util:get_key(OnuDbList)),
+            [insert_onu(Olt, proplists:get_value(Rdn, OnuList)) || Rdn <- AddList],
+            [update_onu(get_dn2(OltDn, Rdn), proplists:get_value(Rdn, OnuDbList), proplists:get_value(Rdn, OnuList)) ||
+                Rdn <- UpdateList];
+         _ ->
+             ignore
+     end.
 
-%%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%%--------------------------------------------------------------------
-handle_info(Info, State) ->
-    ?ERROR("unexpected info: ~p", [Info]),
-    {noreply, State}.
+insert_onu(Dn, Onu) when is_binary(Dn) ->
+    case mit:lookup(mit_util:bdn(Dn)) of
+        {ok, #entry{data = Olt, type = olt}} ->
+            insert_onu(Olt, Onu);
+        {ok, #entry{type = Type}} ->
+            ?ERROR("cannot find :~p to olt: ~p", [Type, Dn]);
+        false ->
+            ?ERROR("cannot find olt: ~p", [Dn])
+    end;
+insert_onu(Olt, Onu) when is_list(Olt) ->
+    {value, OltId} = dataset:get_value(id, Olt),
+    {value, OltIp} = dataset:get_value(ip, Olt),
+    {value, CityId} = dataset:get_value(cityid, Olt),
+    {value, DeviceName} = dataset:get_value(device_name, Onu,""),
+    Now = {datetime, calendar:local_time()},
+    case emysql:insert(mit_onus, [{olt_id, OltId},{cityid, CityId},{name,DeviceName},{created_at, Now}|Onu]) of
+        {updated, {1, Id}} ->
+       %     ?INFO("insert onu dn:~p,result: ~p", [Dn, Onu]),
+            {value, Ip} = dataset:get_value(ip, Onu, undefined),
+            Dn = get_dn(OltIp, Onu),
+            mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id),ip=Ip,type = onu,
+                parent = mit_util:bdn(Dn),data = [{id, Id}|Onu]});
+        {updated, {0, _}} ->
+            ?WARNING("cannot find inserted onu: ~p ~p",  [Onu]);
+        {error, Reason} ->
+            ?ERROR("OltId : ~p,dn :~p, ~nReason: ~p", [OltId, Onu, Reason]);
+        _ ->
+            ok
+    end.
 
-terminate(_Reason, _State) ->
-    ok.
-
-%%--------------------------------------------------------------------
-%% Func: code_change(OldVsn, State, Extra) -> {ok, NewState}
-%% Description: Convert process state when code is changed
-%%--------------------------------------------------------------------
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-%%--------------------------------------------------------------------
-%%% Internal functions
-%%--------------------------------------------------------------------
 update_onu(Dn, OldAttrs, Attrs) ->
     %?INFO("update onu,dn:~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, Attrs]),
     case mit_util:merge(Attrs, OldAttrs) of
         {changed, MergedAttrs} ->
            % ?WARNING("update onu dn:~p,newattr: ~p ~n,result : ~p", [Dn, Attrs, MergedAttrs]),
-            {value, Id} = dataset:get_value(id, OldAttrs, -1),
-            {value, Ip} = dataset:get_value(ip, MergedAttrs, undefined),
-            MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             Datetime = {datetime, calendar:local_time()},
-            case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
-                {updated, {1, _Id}} -> %update mit cache
-                    mit:update(#entry{dn = Dn, uid = mit_util:uid(onu,Id), ip= Ip,
+            case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs]) of
+                {updated, {1, Id}} -> %update mit cache
+                    {value, Ip} = dataset:get_value(ip, MergedAttrs, undefined),
+                    mit:update(#entry{dn = Dn, uid = mit_util:uid(onu,Id), ip = Ip,
                         type = onu, parent = mit_util:bdn(Dn), data = MergedAttrs});
-                {updated, {0, _Id}} -> %stale onu?
+                {updated, {0, Id}} -> %stale onu?
                     ?WARNING("stale onu: ~p,~p", [Dn, Id]);
                 {error, Reason} ->
                     ?ERROR("~p", [Reason])
             end;
         {unchanged, _} ->
             ok
-    end.
-
-insert_onu(Dn, Onu) ->
-    case mit:lookup(mit_util:bdn(Dn)) of
-        {ok, #entry{data = Olt, type = olt}} ->
-            {value, OltId} = dataset:get_value(id, Olt),
-            {value, CityId} = dataset:get_value(cityid, Olt),
-	        {value, DeviceName} = dataset:get_value(device_name, Onu,""),
-            ?INFO("insert onu: ~p", [Dn]),
-            Now = {datetime, calendar:local_time()},
-            case emysql:insert(mit_onus, [{olt_id, OltId},{cityid, CityId},{name,DeviceName},{created_at, Now}|Onu]) of
-                {updated, {1, Id}} ->
-               %     ?INFO("insert onu dn:~p,result: ~p", [Dn, Onu]),
-                    {value, Ip} = dataset:get_value(ip, Onu, undefined),
-                    mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id),ip=Ip,type = onu,
-                        parent = mit_util:bdn(Dn),data = [{id, Id}|Onu]});
-                {updated, {0, _}} ->
-                    ?WARNING("cannot find inserted onu: ~p ~p", [Dn, Onu]);
-                {error, Reason} ->
-                    ?ERROR("OltId : ~p,dn :~p, Reason: ~p", [OltId,Dn, Reason]);
-                _ ->
-                    ok
-            end;
-        {ok, #entry{type = Type}} ->
-            ?ERROR("cannot find :~p to olt: ~p", [Type, Dn]);
-        false ->
-            ?ERROR("cannot find olt: ~p", [Dn])
     end.
 
 transform(Attrs) ->

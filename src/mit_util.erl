@@ -13,6 +13,7 @@
 		 uid/2,
          nid/1,
          get_type/1,
+         get_key/1,
          format/3,
          merge/2,
          get_entry/2,
@@ -20,6 +21,7 @@
          mit_entry/2
          ]).
 
+-export([do_update/4]).
 
 bdn(Dn) when is_binary(Dn) ->
     bdn(binary_to_list(Dn));
@@ -70,25 +72,25 @@ nid(Uid) ->
     list_to_integer(Id).
 
 merge(NewAttrs, OldAttrs) ->
-    merge(unchanged, NewAttrs, OldAttrs).
+    merge(unchanged, NewAttrs, OldAttrs, []).
 
-merge(Changed, [{Attr, Val}|T], OldAttrs) ->
+merge(Changed, [{Attr, Val}|T], OldAttrs, Items) ->
     case dataset:get_value(Attr, OldAttrs) of
     {value, OldVal} ->
         case to_list(OldVal) == to_list(Val) of
             false ->
                 ?INFO("mit changed, ~p",[{OldVal, Val}]),
                 OldAttrs1 = dataset:key_replace(Attr, OldAttrs, {Attr, Val}),
-                merge(changed, T, OldAttrs1);
+                merge(changed, T, OldAttrs1, [Attr|Items]);
             true ->
-                merge(Changed, T, OldAttrs)
+                merge(Changed, T, OldAttrs, Items)
         end;
     {false, _} ->
-        merge(changed, T, [{Attr, Val} | OldAttrs])
+        merge(changed, T, [{Attr, Val} | OldAttrs], [Attr|Items])
     end;
 
-merge(Changed, [], OldAttrs) ->
-    {Changed, OldAttrs}.
+merge(Changed, [], OldAttrs, Items) ->
+    {Changed, OldAttrs, Items}.
 
 
 get_entry(olt, DevId) ->
@@ -168,3 +170,23 @@ format(Type, [Item|Attrs], Entry, Data) ->
 			format(Type, Attrs, Entry, [{Item, Value}|Data])
 		end.
 
+get_key(List) ->
+    [Key || {Key, _} <- List].
+
+
+do_update(Table, Attrs, OldAttrs, CallFun) ->
+    case mit_util:merge(Attrs, OldAttrs) of
+        {changed, MergedAttrs} ->
+            case emysql:update(Table, [{updated_at, {datetime, calendar:local_time()}} | MergedAttrs]) of
+                {updated, {1, Id}} ->
+                    if is_function(CallFun) -> CallFun(Id, MergedAttrs);
+                        _ -> ok
+                    end;
+                {updated, {0, _}} ->
+                    ?WARNING("stale board: ~p", [MergedAttrs]);
+                {error, Reason} ->
+                    ?ERROR("~p,~p", [MergedAttrs, Reason])
+            end;
+       {unchanged, _} ->
+            ok
+    end.

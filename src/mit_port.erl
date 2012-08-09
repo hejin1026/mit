@@ -1,25 +1,13 @@
-%%%----------------------------------------------------------------------
-%%% File    : mit_port.erl
-%%% Author  : Ery Lee <ery.lee@gmail.com>
-%%% Purpose : port of onu or olt
-%%% Created : 30 Nov 2009
-%%% License : http://www.opengoss.com
-%%%
-%%% Copyright (C) 2007-2009, www.opengoss.com
-%%%----------------------------------------------------------------------
 -module(mit_port).
 
--author('ery.lee@gmail.com').
+-created("hejin 2012-8-7").
 
 -import(extbif, [to_binary/1, to_list/1]).
 
 -include("mit.hrl").
 -include_lib("elog/include/elog.hrl").
 
--behavior(gen_server).
-
--export([start_link/0,
-         stop/0]).
+-mit_boot_load({port, load, "loading olt port", olt}).
 
 -export([all_monet/0,
          one/1
@@ -33,25 +21,7 @@
 		 update_ports/2,
          update/2]).
 
--export([init/1,
-		 handle_call/3,
-		 handle_cast/2,
-		 handle_info/2,
-		 terminate/2,
-		 code_change/3]).
-
 -define(SERVER, ?MODULE).
-
-%%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
-%%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-stop() ->
-	gen_server:call(?SERVER, stop).
-
 
 all_monet() ->
     Sql = "select t2.means as means, t1.*   from mit_ports t1 LEFT join collect_means t2 on
@@ -144,7 +114,7 @@ lookup(Dn) ->
     end.
 
 
-lookup_from_emysql(Onu) ->
+find_ports(Onu) ->
  	{value, DevId} = dataset:get_value(id, Onu),
 		case emysql:select({mit_ports, {'and',[{device_id, DevId},{device_type,2}]}}) of
 				{ok, []} ->
@@ -156,39 +126,12 @@ lookup_from_emysql(Onu) ->
 					 false
 				end.
 
-add(Dn, Attrs) ->
-    gen_server:cast(?MODULE, {add, Dn, Attrs}).
 
-
-update(Dn, Attrs) ->
-    gen_server:cast(?MODULE, {update, Dn, Attrs}).
-
-%%--------------------------------------------------------------------
-%% Function: init(Args) -> {ok, State} |
-%%                         {ok, State, Timeout} |
-%%                         ignore               |
-%%                         {stop, Reason}
-%% Description: Initiates the server
-%%--------------------------------------------------------------------
-init([]) ->
-    case mnesia:system_info(extra_db_nodes) of
-        [] -> %master node
-            case  do_init() of
-                {ok, _State} ->
-                    io:format("finish start mit port...~n",[]),
-					{ok, state};
-                {error, Reason} ->
-                    ?ERROR("mit_port start failure...",[]),
-					{stop, Reason}
-            end;
-        _ -> %slave node
-            {ok, state}
-    end.
-
-
-do_init() ->
-    {ok, Ports} = emysql:sqlquery("select t.ip as olt_ip,p.* from mit_ports p LEFT join mit_olts t on t.id = p.device_id  where p.device_type = 1"),
-    io:format("start mem port ...", []),
+load() ->
+    ?ERROR("look mem port ...", []),
+    {ok, Ports} = emysql:sqlquery("select t.ip as olt_ip,p.*
+        from mit_ports p LEFT join mit_olts t on t.id = p.device_id  where p.device_type = 1"),
+    ?ERROR("start mem port ...", []),
     lists:foreach(fun(Port) ->
         {value, OltIp} = dataset:get_value(olt_ip, Port),
         OltDn = lists:concat(["olt=", to_list(OltIp)]),
@@ -199,261 +142,115 @@ do_init() ->
         mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,Id),
             type = port, parent = OltDn, data = mit_util:format(mit, mem_attrs(), Port)})
     end, Ports),
-    {ok, state}.
+    ?ERROR("finish mem port...",[]).
 
 
-%%--------------------------------------------------------------------
-%% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
-%%                                      {reply, Reply, State, Timeout} |
-%%                                      {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, Reply, State} |
-%%                                      {stop, Reason, State}
-%% Description: Handling call messages
-%%--------------------------------------------------------------------
-handle_call(stop, _From, State) ->
-	{stop, normal, ok, State};
-
-handle_call(Request, _From, State) ->
-	?ERROR("unexpected requrest: ~n", [Request]),
-    {reply, {error, unexpected_request}, State}.
-
-%%--------------------------------------------------------------------
-%% Function: handle_cast(Msg, State) -> {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, State}
-%% Description: Handling cast messages
-%%--------------------------------------------------------------------
-handle_cast({add, Dn, Port}, State) ->
+add(Dn, Port) ->
     case lookup(Dn) of
         {ok, OldPort} ->
             update_port(Dn, OldPort, Port);
         false ->
             insert_port(Dn, Port)
-    end,
-    {noreply, State};
+    end.
 
-handle_cast({update, Dn, Attrs}, State) ->
+update(Dn, Attrs) ->
     case lookup(Dn) of
         {ok, OldAttrs} ->
             update_port(Dn, OldAttrs, Attrs);
         false ->
             ?ERROR("cannot find onu ~p", [Dn])
-    end,
-    {noreply, State};
-
-handle_cast(Msg, State) ->
-	?ERROR("unexpected msg: ~p", [Msg]),
-    {noreply, State}.
-
-%%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%%--------------------------------------------------------------------
-handle_info(Info, State) ->
-    ?ERROR("unexpected info: ~p", [Info]),
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-%%--------------------------------------------------------------------
-%%% Internal functions
-%%--------------------------------------------------------------------
-update_ports(Onu, Ports) ->
-	case lookup_from_emysql(Onu) of
-        {ok, Records} ->
-			OldPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Records],
-			?INFO("batch_update_port ~p", [Ports]),
-            batch_update_port(Ports,OldPorts);
-        false ->
-            ?ERROR("cannot find onu ports ~p", [Onu])
     end.
 
 
 add_ports(Dn, Ports) ->
-	 case mit:lookup(Dn) of
-	        {ok, #entry{type = onu, data = Onu} = _} ->
-	    		case lookup_from_emysql(Onu) of
-	        			{ok, Records} ->
-							NewPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Ports],
-							OldPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Records],
-	            			batch_insert_port(Onu,NewPorts,OldPorts);
-	        			false ->
-	            			NewPorts = [{to_list(proplists:get_value(port_index, R)), R} || R <- Ports],
-	            			batch_insert_port(Onu,NewPorts,[])
-	    		end;
+    do_ports(Dn, Ports, fun({AddList, UpdateList}, Onu, DbList, List) ->
+        [insert_port(onu, Onu, proplists:get_value(Rdn, List)) || Rdn <- AddList],
+        [update_port(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList]
+    end).
+    
+update_ports(Dn, Ports) ->
+    do_ports(Dn, Ports, fun({_AddList, UpdateList},_Onu, DbList, List) ->
+        [update_port(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList]
+    end).
+
+do_ports(Dn, Ports, Callback) ->
+    case mit:lookup(Dn) of
+	        {ok, #entry{uid= Id, type = onu, data = Onu} = _} ->
+	    		{ok, PortInDb} = emysql:select({mit_ports, {'and',[{device_id, mit_util:nid(Id)},{device_type,2}]}}),
+                List = [{to_binary(proplists:get_value(port_index, R)), R} || R <- Ports],
+                DbList = [{to_binary(proplists:get_value(port_index, R)), R} || R <- PortInDb],
+                {AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(List), mit_util:get_key(DbList)),
+                Callback({AddList, UpdateList}, Onu, DbList, List);
 		    false ->
 	        	?WARNING("cannot find entry: ~p", [Dn])
 	end.
-
 
 insert_port(Dn, Port) ->
     Bdn = mit_util:bdn(Dn),
     case mit:lookup(Bdn) of
         {ok, #entry{type = Type, data = Entry} = _} ->
-            % ?INFO("info: insert port dn: ~p, entry: ~p", [Dn, Entry]),
-            {value, Id} = dataset:get_value(id, Entry),
-            {value, DeviceManu} = dataset:get_value(device_manu, Entry),
-            DevType = mit_util:get_type(Type),
-            {value, PortIndex} = dataset:get_value(port_index, Port,0),
-            MustInfo = [{device_type, DevType}, {device_id, Id},{device_manu,DeviceManu}],
-	        MayInfo = case dataset:get_value(cityid, Entry) of
-                {value, CityId} -> [{cityid, CityId}];
-                {false, _} -> []
-            end,
-			PortInfo = MustInfo ++ MayInfo ++  Port,
-            case DevType of
-                1 ->
-                    do_insert_port(Dn, PortInfo);
-                _ ->
-                    case select_port(Id, DevType, PortIndex) of
-                        {ok, []} ->
-                            insert_port2(PortInfo);%不写entry
-                        {ok, [OldPortInfo]} ->
-                            update_port2(OldPortInfo, PortInfo);%不写entry
-                        {error, _} ->
-                            ?ERROR("select onu port error:~p", [PortInfo])
-                    end
-            end;
-        false ->
+            InsertMem = fun(Id, PortInfo) ->
+                 mit:update(#entry{dn = Dn, uid = mit_util:uid(port,Id), type = board,
+                     parent = mit_util:bdn(Dn), data = PortInfo}),
+                 add_splite(Dn,[{id, Id}|PortInfo]) %每加入一个PON口，同时生成一个一级分光器，直接挂在pon下
+             end,
+            do_insert(Type, Entry, Port, InsertMem);
+         false ->
             ?WARNING("cannot find entry: ~p", [Bdn])
     end.
 
-select_port(Id, DevType, PortIndex) ->
-    emysql:select({mit_ports, {'and', {'and', {port_index, PortIndex}, {device_type, DevType}}, {device_id, Id}}}).
+insert_port(Type, Onu, Port) ->
+    do_insert(Type, Onu, Port, ingore).
 
-do_insert_port(Dn, PortInfo) ->
+do_insert(Type, Entry, Port, Callback) ->
+    % ?INFO("info: insert port dn: ~p, entry: ~p", [Dn, Entry]),
+    PortInfo = get_device_info(Type, Entry) ++  Port,
     case emysql:insert(mit_ports, [{created_at, {datetime, calendar:local_time()}}| PortInfo]) of
         {updated, {0, _}} ->
-            ?WARNING("cannot inserted port: ~p ~p", [PortInfo]);
+            ?WARNING("cannot inserted type: ~p ~p", [Type, PortInfo]);
         {updated, {1, PId}} ->
-            mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,PId), type = port,
-                parent = mit_util:bdn(Dn), data = [{id, PId}|PortInfo]}),
-            add_splite(Dn,[{id, PId}|PortInfo]); %每加入一个PON口，同时生成一个一级分光器，直接挂在pon下
+            if is_function(Callback) ->
+                Callback(PId, PortInfo);
+             _ ->
+                 ok
+            end;
         {error, Reason} ->
             ?WARNING("~p", [Reason])
     end.
 
-%不写entry
-insert_port2(PortInfo) ->
-    case emysql:insert(mit_ports, PortInfo) of
-        {updated, _} ->
-            ok;
-        {error, Reason} ->
-            ?WARNING("~p", [Reason])
-    end.
+get_device_info(Type, Entry) ->
+    {value, Id} = dataset:get_value(id, Entry),
+    {value, CityId} = dataset:get_value(cityid, Entry),
+    {value, DeviceManu} = dataset:get_value(device_manu, Entry),
+    DeviceType = mit_util:get_type(Type),
+    MustInfo = [{device_type, DeviceType}, {device_id, Id},{device_manu,DeviceManu}],
+    MayInfo = case dataset:get_value(cityid, Entry) of
+        {value, CityId} -> [{cityid, CityId}];
+        {false, _} -> []
+    end,
+    MustInfo ++ MayInfo.
+
+
 
 update_port(Dn, OldAttrs, Attrs) ->
-    case mit_util:merge(Attrs, OldAttrs) of
-        {changed, MergedAttrs} ->
-            {value, Id} = dataset:get_value(id, OldAttrs),
-            % ?WARNING("info :update port: ~p, ~p", [Dn, MergedAttrs]),
-            Datetime = {datetime, calendar:local_time()},
-            MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
-            MergedAttrs2 = lists:keydelete(means, 1, MergedAttrs1),
-            case emysql:update(mit_ports, [{updated_at, Datetime} | MergedAttrs2], {id, Id}) of
-                {updated, {1, _Id}} -> %update mit cache
-                    mit:update(#entry{dn = Dn, uid = mit_util:uid(port,Id), type = port,
-                        parent = mit_util:bdn(Dn), data = MergedAttrs});
-                {updated, {0, _}} -> %stale port?
-                    ?WARNING("stale port: ~p", [Dn]);
-                {error, Reason} ->
-                    ?ERROR("~p", [Reason])
-            end;
-        {unchanged, _} ->
-            ok
-    end.
+    UpdateMem = fun(Id, PortInfo) ->
+         mit:update(#entry{dn = Dn, uid = mit_util:uid(port,Id), type = board, parent = mit_util:bdn(Dn), data = PortInfo})
+     end,
+    mit_util:do_update(mit_ports, Attrs, OldAttrs, UpdateMem).
 
+update_port(OldAttrs, Attrs) ->
+    mit_util:do_update(mit_ports, Attrs, OldAttrs, ignore).
 
-%不写entry
-update_port2(OldAttrs, Attrs) ->
-    case mit_util:merge(Attrs, OldAttrs) of
-        {changed, MergedAttrs} ->
-            {value, Id} = dataset:get_value(id, OldAttrs),
-            % ?WARNING("info :update port: ~p, ~p", [Dn, MergedAttrs]),
-            Datetime = {datetime, calendar:local_time()},
-            MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
-            MergedAttrs2 = lists:keydelete(means, 1, MergedAttrs1),
-            case emysql:update(mit_ports, [{updated_at, Datetime} | MergedAttrs2], {id, Id}) of
-                {updated, _} ->
-                    ok;
-                {error, Reason} ->
-                    ?ERROR("~p", [Reason])
-            end;
-        {unchanged, _} ->
-            ok
-    end.
 
 add_splite(PonDn,Port)->
 	?INFO("add_splite ~p,~p", [PonDn,Port]),
 	{value, DeviceType} = dataset:get_value(device_type, Port,0),
 	{value, PortCategory} = dataset:get_value(port_category, Port,0),
-	{value, PonId} = dataset:get_value(id, Port),
-	{value, OltId} = dataset:get_value(device_id, Port),
-	{value, PortName} = dataset:get_value(port_name, Port),
 	if DeviceType==1 andalso PortCategory==1 ->
+            {value, PonId} = dataset:get_value(id, Port),
+            {value, OltId} = dataset:get_value(device_id, Port),
+            {value, PortName} = dataset:get_value(port_name, Port),
 			mit_splite:add(PonDn,[{pon_id,PonId},{olt_id,OltId},{split_name,PortName},{splitter_level,1}]);
 		true -> ignore
 	end.
-
-batch_insert_port(Onu,NewPorts,OldPorts)->
-	DeviceManu = proplists:get_value(device_manu, Onu,0),
-		CityId = proplists:get_value(cityid, Onu,0),
-		OnuId = proplists:get_value(id, Onu,0),
-	NewIdxList = [Idx || {Idx, _} <- NewPorts],
-	OldIdxList = [Idx || {Idx, _} <- OldPorts],
-	{Added, Updated, Deleted} = extlib:list_compare(NewIdxList, OldIdxList),
-	%added
-	Added0 = lists:dropwhile(fun(I)->I=="undefined" end,Added),
-	lists:foreach(fun(Idx) ->
-        MustInfo = [{device_type, 2}, {device_id, OnuId},{device_manu,DeviceManu},{cityid,CityId}],
-        NewPort = proplists:get_value(Idx, NewPorts),
-        case emysql:insert(mit_ports, MustInfo++NewPort) of
-            {error, Err} -> ?ERROR("insert port error ~p", [Err]);
-            _ -> ok
-        end
-	end, Added0),
-	%updated
-	lists:foreach(fun(Idx) ->
-	NewPort = proplists:get_value(Idx, NewPorts),
-	OldPort = proplists:get_value(Idx, OldPorts),
-	update_port2(OldPort, NewPort)
-	end, Updated),
-	%deleted
-	?WARNING("find deleted ports and do nothing. onu ~p,index~p",[Onu,Deleted]).
-
-
-batch_update_port([], _OldPorts) ->
-		    ok;
-
-batch_update_port([Port|T], OldPorts) ->
-    case dataset:get_value(port_index, Port,false) of
-    {value, false} ->
-        ?WARNING("no index in port ~p", [Port]);
-    {value, PortIndex} ->
-		case proplists:get_value(to_list(PortIndex), OldPorts,false) of
-			false -> ?WARNING("can not find port ~p,index:~p", [Port,PortIndex]);
-			OldPort -> update_port2(OldPort,Port)
-		end
-    end,
-    batch_update_port(T,OldPorts).
-
-
-
-
-
-
-
-
-
-
-
-
-
 

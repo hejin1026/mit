@@ -129,14 +129,40 @@ init([]) ->
             {atomic, ok} = mnesia:create_table(entry,
                 [{ram_copies, [node()]}, {index, [uid, ip, parent]},
                  {attributes, record_info(fields, entry)}]),
+
+            BootSteps = [{Name, Mod, Fun, Descr, Dep}
+                                || {Mod, [{Name, Fun, Descr, Dep}]}
+                                    <- extlib:module_with_attrs(master, mit_boot_load)],
+            [put({boot_step, element(1, Step)}, Step) || Step <- BootSteps],
+            [boot_load_step(Step) || Step <- BootSteps],
             erlang:send_after(120 * 1000, self(), sync_changes);
          V -> %slave node
             ?INFO("im slave node:~p",[V]),
             ok
     end,
+    ?ERROR("finish start mit...~n",[]),
     mnesia:add_table_copy(entry, node(), ram_copies),
-    io:format("finish start mit...~n",[]),
+    ?ERROR("finish copy mit...~n",[]),
     {ok, state}.
+
+boot_load_step({Name, Mod, Fun, Descr, Dep}) ->
+	case get({boot_load, Name}) of
+	true ->
+		ok;
+	_ ->
+		DepLoaded = get({boot_load, Dep}),
+		if
+		Dep =:= undefined ->
+			ok;
+		DepLoaded ->
+			ok;
+		true ->
+			boot_load_step(get({boot_step, Dep}))
+		end,
+		?INFO("~s", [Descr]),
+		Mod:Fun(),
+		put({boot_load, Name}, true)
+	end.
 
 
 handle_call(stop, _From, State) ->
@@ -151,21 +177,21 @@ handle_cast(_Msg, State) ->
 
 handle_info(sync_changes, State) ->
 	case emysql:select(mit_devices_changed) of
-    {ok, ChangedLogs} ->
-        lists:foreach(fun(ChangedLog) ->
-            ?ERROR("sync_change: ~p ", [ChangedLog]),
-            {value, Id} = dataset:get_value(id, ChangedLog),
-            {value, DevId} = dataset:get_value(device_id, ChangedLog),
-            {value, DevType} = dataset:get_value(device_type, ChangedLog),
-            {value, Oper} = dataset:get_value(oper_type, ChangedLog),
-            try handle_change(Oper, {mit_util:get_type(DevType), DevId}, ChangedLog) of
-                _ -> emysql:delete(mit_devices_changed, {id, Id})
-            catch
-                _:Ex -> ?ERROR("~p, ~p", [Ex, erlang:get_stacktrace()])
-            end
-        end, ChangedLogs);
-    {error, Reason} ->
-        ?ERROR("~p", [Reason])
+        {ok, ChangedLogs} ->
+            lists:foreach(fun(ChangedLog) ->
+                ?ERROR("sync_change: ~p ", [ChangedLog]),
+                {value, Id} = dataset:get_value(id, ChangedLog),
+                {value, DevId} = dataset:get_value(device_id, ChangedLog),
+                {value, DevType} = dataset:get_value(device_type, ChangedLog),
+                {value, Oper} = dataset:get_value(oper_type, ChangedLog),
+                try handle_change(Oper, {mit_util:get_type(DevType), DevId}, ChangedLog) of
+                    _ -> emysql:delete(mit_devices_changed, {id, Id})
+                catch
+                    _:Ex -> ?ERROR("~p, ~p", [Ex, erlang:get_stacktrace()])
+                end
+            end, ChangedLogs);
+        {error, Reason} ->
+            ?ERROR("~p", [Reason])
 	end,
 	erlang:send_after(10 * 1000, self(), sync_changes),
     {noreply, State};

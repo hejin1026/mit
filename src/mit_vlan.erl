@@ -1,6 +1,6 @@
 -module(mit_vlan).
 
--author('hejin-2-24').
+-author("hejin-2011-2-24").
 
 -include("mit.hrl").
 -include_lib("elog/include/elog.hrl").

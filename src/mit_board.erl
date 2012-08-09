@@ -1,22 +1,14 @@
-%%%----------------------------------------------------------------------
-%%% File    : mit_board.erl
-%%% Author  : Ery Lee <ery.lee@gmail.com>
-%%% Purpose : olt board
-%%% Created : 30 Nov 2009
-%%% License : http://www.opengoss.com
-%%%
-%%% Copyright (C) 2007-2009, www.opengoss.com
-%%%----------------------------------------------------------------------
+
 -module(mit_board).
 
--author('ery.lee@gmail.com').
+-creatd("hejin 2012-8-7").
 
 -import(extbif, [to_binary/1,to_list/1]).
 
--behavior(gen_server).
-
 -include("mit.hrl").
 -include_lib("elog/include/elog.hrl").
+
+-mit_boot_load({board, load, "loading olt board", olt}).
 
 %start/stop
 -export([start_link/0,
@@ -26,29 +18,10 @@
 -export([attrs/0,
          lookup/1,
 		 add/2,
+		 add_boards/2,
 		 update/2]).
 
-%callback
--export([init/1,
-		 handle_call/3,
-		 handle_cast/2,
-		 handle_info/2,
-		 terminate/2,
-		 code_change/3]).
-
 -define(SERVER, ?MODULE).
-
-%%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
-%%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-%% @spec () -> ok
-%% @doc Stop the mit server.
-stop() ->
-	gen_server:call(?SERVER, stop).
 
 attrs() ->
     [id,
@@ -71,184 +44,125 @@ lookup(Dn) ->
     false ->
 		false
     end.
-
-add(Dn, Attrs) ->
-	gen_server:cast(?SERVER, {add, Dn, Attrs}).
-
-update(Dn, Attrs) ->
-	gen_server:cast(?SERVER, {update, Dn, Attrs}).
-
-%%--------------------------------------------------------------------
-%% Function: init(Args) -> {ok, State} |
-%%                         {ok, State, Timeout} |
-%%                         ignore               |
-%%                         {stop, Reason}
-%% Description: Initiates the server
-%%--------------------------------------------------------------------
-init([]) ->
-    case mnesia:system_info(extra_db_nodes) of
-        [] -> %master node
-            do_init();
-        _ -> %slave node
-            ok
-    end,
-    {ok, state}.
-
-
-do_init() ->
-    {ok, Boards} = emysql:sqlquery("select t.ip as olt_ip,o.* from mit_boards o LEFT join mit_olts t on t.id = o.device_id  where o.device_type = 1"),
-    io:format("start mem board ...", []),
+    
+load() ->
+    {ok, Boards} = emysql:sqlquery("select t.ip,o.* from mit_boards o LEFT join mit_olts t on t.id = o.device_id
+        where o.device_type = 1"),
+    ?ERROR("start mem board ...", []),
     lists:foreach(fun(Board) ->
-        {value, OltIp} = dataset:get_value(olt_ip, Board),
-        OltDn = lists:concat(["olt=", to_list(OltIp)]),
         {value, Id} = dataset:get_value(id, Board),
         Buid = "slot:" ++ integer_to_list(Id),
-        {value, Boardid} = dataset:get_value(boardid, Board),
-        Rdn = "slot=" ++ to_list(Boardid),
-        Dn = Rdn ++ "," ++ to_list(OltDn),
+        {value, OltIp} = dataset:get_value(ip, Board),
+        OltDn = lists:concat(["olt=", to_list(OltIp)]),
+        Dn = get_dn(OltIp, Board),
         mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = OltDn,
             type = board, data = mit_util:format(mit, attrs(), Board)})
     end, Boards),
-    io:format("finish start board : ~p ~n", [length(Boards)]),
-    {ok, state}.
+    ?ERROR("finish start board : ~p ~n", [length(Boards)]).
 
-%%--------------------------------------------------------------------
-%% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
-%%                                      {reply, Reply, State, Timeout} |
-%%                                      {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, Reply, State} |
-%%                                      {stop, Reason, State}
-%% Description: Handling call messages
-%%--------------------------------------------------------------------
-handle_call(stop, _From, State) ->
-	{stop, normal, ok, State};
 
-handle_call(Request, _From, State) ->
-	?ERROR("unexpected requrest: ~n", [Request]),
-    {reply, ok, State}.
+get_dn(OltIp, Board) ->
+      {value, Boardid} = dataset:get_value(boardid, Board),
+      lists:concat(["slot=", to_list(Boardid),",olt=", to_list(OltIp)]).
 
-%%--------------------------------------------------------------------
-%% Function: handle_cast(Msg, State) -> {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, State}
-%% Description: Handling cast messages
-%%--------------------------------------------------------------------
-handle_cast({add, Dn, Attrs}, State) ->
+get_dn2(OltDn, BoardId) ->
+      lists:concat(["slot=", to_list(BoardId),",", to_list(OltDn)]).
+
+add(Dn, Attrs) ->
     case lookup(to_binary(Dn)) of
-    {ok, OldAttrs} ->
-        update_board(Dn, OldAttrs, Attrs);
-    false ->
-        case lookup_from_mysql(Dn) of
-            false ->
-                insert_board(Dn, Attrs);
-            _ ->
-                ok
-        end
-    end,
-    {noreply, State};
+        {ok, OldAttrs} ->
+            update_board(Dn, OldAttrs, Attrs);
+        false ->
+            insert_board(Dn, Attrs)
+    end;
 
-handle_cast({update, Dn, Attrs}, State) ->
+add_boards(Dn, Boards) ->
+    case mit:lookup(Dn) of
+        {ok, #entry{uid = Id, type = Type, data = Entry}} ->
+            {ok, BoardInDb} = emysql:select(mit_boards, 
+                ({'and', {device_id, mit_util:nid(Id)}, {device_type, mit_util:get_type(Type)}})),
+            List = [{to_binary(proplists:get_value(boardid, Data)), Data} || Data <- Boards],
+            DbList = [{to_binary(proplists:get_value(boardid, Data)), Data} || Data <- BoardInDb],
+            {AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(List), mit_util:get_key(DbList)),
+            [insert_board(Type, Entry, proplists:get_value(Rdn, List)) || Rdn <- AddList],
+            [update_board(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList];
+         _ ->
+             ignore
+     end.
+
+
+update(Dn, Attrs) ->
     case lookup(to_binary(Dn)) of
-    {ok, OldAttrs} ->
-        update_board(Dn, OldAttrs, Attrs);
-    false ->
-        ?ERROR("cannot find board: ~p", [Dn])
-    end,
-    {noreply, State};
-
-handle_cast(Msg, State) ->
-	?ERROR("unexpected msg: ~p", [Msg]),
-    {noreply, State}.
-
-%%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%%--------------------------------------------------------------------
-
-handle_info(Info, State) ->
-    ?ERROR("unexpected info: ~p", [Info]),
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-%%--------------------------------------------------------------------
-%%% Internal functions
-%%--------------------------------------------------------------------
-insert_board(Dn, Board) ->
-    Bdn = mit_util:bdn(Dn),
-    case mit:lookup(Bdn) of
-    {ok, #entry{data = Entry, type = Type} = _} ->
-        {value, Id} = dataset:get_value(id, Entry),
-        {value, CityId} = dataset:get_value(cityid, Entry),
-        {value, DeviceManu} = dataset:get_value(device_manu, Entry),
-        DateTime = {datetime, calendar:local_time()},
-        % ?INFO("insert_board: ~p", [Dn]),
-        DeviceType = mit_util:get_type(Type),
-        BoardInfo = [{device_type, DeviceType}, {device_id, Id},{device_manu,DeviceManu},
-                {created_at, DateTime}, {updated_at, DateTime},{cityid,CityId} | Board],
-        case emysql:insert(mit_boards, BoardInfo) of
-        {updated,{1,Bid}} ->
-                Uid = "slot:" ++ integer_to_list(Bid),
-                mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = BoardInfo});
-		{updated, {0, _}} -> %stale board?
-	            ?WARNING("stale board: ~p,~p", [Dn,BoardInfo]);
-        {error, Reason} ->
-            ?WARNING("~p", [Reason])
-        end;
-    false ->
-        ?WARNING("cannot find entry: ~p", [Bdn])
-    end.
-
-update_board(Dn, OldAttrs, Attrs) ->
-    case mit_util:merge(Attrs, OldAttrs) of
-    {changed, MergedAttrs} ->
-        % ?INFO("update_board: ~p", [Dn]),
-        {value, Id} = dataset:get_value(id, MergedAttrs,0),
-        Datetime = {datetime, calendar:local_time()},
-        MergedAttrs2 = lists:keydelete(id, 1, MergedAttrs),
-        case emysql:update(mit_boards, [{updated_at, Datetime} | MergedAttrs2], {id, Id}) of
-        {updated, {1, _Id}} -> %update mit cache
-            Uid = "slot:" ++ integer_to_list(Id),
-            mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = MergedAttrs});
-        {updated, {0, _}} -> %stale board?
-            ?WARNING("stale board: ~p", [Dn]);
-            %mit:delete(Dn);
-        {error, Reason} ->
-            ?ERROR("~p", [Reason])
-        end;
-    {unchanged, _} ->
-        ok
-    end.
-
-
-
-lookup_from_mysql(Dn) ->
-    Bdn = mit_util:bdn(Dn),
-    case mit:lookup(Bdn) of
-        {ok, #entry{data = Entry, type = Type} = _} ->
-            {value, DevId} = dataset:get_value(id, Entry),
-            DevType = case Type of
-                olt -> 1;
-                onu -> 2
-             end,
-            case emysql:select({mit_boards, {'and',[{device_id, DevId},{device_type, DevType}]}}) of
-                {ok, []} ->
-                      false;
-                {ok, _OldBoards} ->
-                      true;
-                {error, _} ->
-                     ?WARNING("select port error dn:~p",[Dn]),
-                     ignore
-            end;
-    false ->
-        false
+        {ok, OldAttrs} ->
+            update_board(Dn, OldAttrs, Attrs);
+        false ->
+            ?ERROR("cannot find board: ~p", [Dn])
     end.
     
-            
+insert_board(Dn, Board) ->
+    case mit:lookup(mit_util:bdn(Dn)) of
+    {ok, #entry{data = Entry, type = Type} = _} ->
+        InsertMem = fun(Id, BoardInfo) ->
+             Uid = "slot:" ++ integer_to_list(Id),
+             {value, OltIp} = dataset:get_value(ip, Entry),
+             Dn = get_dn(OltIp, BoardInfo),
+             mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = [{id, Id}|BoardInfo]})
+         end,
+        do_insert(Type, Entry, Board, InsertMem);
+    false ->
+        ?WARNING("cannot find entry: ~p", [Dn])
+    end;
+
+insert_board(Type, Entry, Board) ->
+    do_insert(Type, Entry, Board, ignore).
+
+do_insert(Type, Entry, Board, CallFun) ->
+    DeviceInfo = get_device_info(Type, Entry),
+    BoardInfo = DeviceInfo ++ Board,
+    case emysql:insert(mit_boards, [{created_at, {datetime, calendar:local_time()}}|BoardInfo]) of
+        {updated,{1, Bid}} ->
+            if is_function(CallFun) ->
+                CallFun(Bid, BoardInfo);
+             _ ->
+                 ok
+            end;
+        {updated, {0, _}} -> %stale board?
+            ?WARNING("stale board: ~p", [BoardInfo]);
+        {error, Reason} ->
+            ?WARNING("~p", [Reason])
+    end.
+
+get_device_info(Type, Entry) ->
+    {value, Id} = dataset:get_value(id, Entry),
+    {value, CityId} = dataset:get_value(cityid, Entry),
+    {value, DeviceManu} = dataset:get_value(device_manu, Entry),
+    DeviceType = mit_util:get_type(Type),
+    [{device_type, DeviceType}, {device_id, Id},{device_manu,DeviceManu},{cityid,CityId}].
+
+
+update_board(Dn, OldAttrs, Attrs) ->
+    UpdateMem = fun(Id, BoardInfo) ->
+         Uid = "slot:" ++ integer_to_list(Id),
+         mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = BoardInfo})
+     end,
+    do_update(Attrs, OldAttrs, UpdateMem);
+
+update_board(OldAttrs, Attrs) ->
+    do_update(Attrs, OldAttrs, ingore).
+
+do_update(Attrs, OldAttrs, CallFun) ->
+    case mit_util:merge(Attrs, OldAttrs) of
+        {changed, MergedAttrs} ->
+            case emysql:update(mit_boards, [{updated_at, {datetime, calendar:local_time()}} | MergedAttrs]) of
+                {updated, {1, Id}} -> 
+                    if is_function(CallFun) -> CallFun(Id, MergedAttrs);
+                        _ -> ok
+                    end;
+                {updated, {0, _}} -> 
+                    ?WARNING("stale board: ~p", [MergedAttrs]);
+                {error, Reason} ->
+                    ?ERROR("~p,~p", [MergedAttrs, Reason])
+            end;
+       {unchanged, _} ->
+            ok
+    end.

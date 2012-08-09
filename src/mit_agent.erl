@@ -79,28 +79,68 @@ handle_datalist(Data)  ->
 handle_data({entry, Type, Dn, []}) ->
 	 ?WARNING("get disco data is [] dn:~p,Type:~p",[Dn,Type]);
 handle_data({entry, olt, Dn, Attrs}) ->
-    mit_olt:add(Dn, Attrs);
+    do(fun()->
+        try mit_olt:add(Dn, Attrs)
+        catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Dn, Attrs])
+        end
+       end);
 handle_data({entry, onu, Dn, Attrs})->
-    mit_onu:add(Dn, Attrs);
+    do(fun()->
+        try mit_onu:add(Dn, Attrs)
+        catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Dn, Attrs])
+        end
+       end);
+handle_data({entry, onus, OltDn, Attrs}) ->
+	Fun = fun() ->
+			try mit_onu:add_onus(OltDn, Attrs)
+            catch
+				_:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Attrs,OltDn])
+			end
+		  end,
+	do(Fun);
 handle_data({entry, board, Dn, Attrs}) ->
-    mit_board:add(Dn, Attrs);
+    do(fun()->
+        try mit_board:add(Dn, Attrs)
+        catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Dn, Attrs])
+        end
+       end);
+handle_data({entry, boards, OltDn, Attrs}) ->
+	Fun = fun() ->
+			try mit_board:add_boards(OltDn, Attrs)
+            catch
+				_:Err ->?ERROR("bad error: ~p,~p", [Err,Attrs,OltDn])
+			end
+		  end,
+	do(Fun);
 handle_data({entry, port, Dn, Attrs}) ->
-	mit_port:add(Dn, Attrs);
+    do(fun()->
+        try mit_port:add(Dn, Attrs)
+        catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Dn, Attrs])
+        end
+       end);
 handle_data({entry, ports, Dn, Attrs}) ->%批量add 用户口 一个onu一次，dn为onu
 	Fun = fun() ->
 			try mit_port:add_ports(Dn, Attrs)  catch
 				_:Err ->?ERROR("bad error: ~p,~p", [Err,Attrs,Dn])
 			end
 		  end,
-	worker_pool:submit_async(Fun);
+	do(Fun);
 handle_data({entry, eoc, Dn, Attrs}) ->
 	mit_eoc:add(Dn, Attrs);
 handle_data({entry, cpe, Dn, Attrs}) ->
 	mit_cpe:add(Dn, Attrs);
 handle_data({entry, gem, Dn, Attrs}) ->
-    mit_gem:add(Dn, Attrs);
+    do(fun()->
+        try mit_gem:add(Dn, Attrs)
+        catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Dn, Attrs])
+        end
+       end);
 handle_data({entry, vlan, Dn, Attrs}) ->
-    mit_vlan:add(Dn, Attrs);
+    do(fun()->
+        try mit_vlan:add(Dn, Attrs)
+        catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Dn, Attrs])
+        end
+       end);
 handle_data({operate, Operate}) ->
 	?ERROR("operate_data normal :~p, ~n", [Operate]),
 	handle_operate(Operate);
@@ -108,6 +148,9 @@ handle_data({hostinfo, HostInfo}) ->
     handle_hostinfo(HostInfo);
 handle_data(_) ->
    ok.
+
+do(Fun) ->
+    worker_pool:submit_async(Fun).
 
 
 handle_operate(Operate)	->

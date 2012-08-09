@@ -8,10 +8,7 @@
 
 -import(extbif, [to_binary/1]).
 
--behavior(gen_server).
-
--export([start_link/0,
-         stop/0]).
+-mit_boot_load({cpe, load, "loading cpe", eoc}).
 
 -export([all/0,
          one/1,
@@ -25,28 +22,8 @@
          get_notify_entry/1,
 		 add/2,
 		 update/2]).
-
--export([init/1,
-		 handle_call/3,
-		 handle_cast/2,
-		 handle_info/2,
-		 terminate/2,
-		 code_change/3]).
-
+     
 -import(extbif, [to_list/1]).
-
-%%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
-%%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
-
-stop() ->
-	gen_server:call(?MODULE, stop).
-
-
-
 
 all() ->
     Sql = "select  'snmp' means, 'cpe' device_type,t1.* from mit_eoc_terminals t1" ,
@@ -131,30 +108,8 @@ lookup(Dn) ->
             false
     end.
 
-add(Dn, Cpe) ->
-	gen_server:cast(?MODULE, {add, Dn, Cpe}).
 
-update(Dn, Attrs) ->
-    gen_server:cast(?MODULE, {update, Dn, Attrs}).
-
-%%--------------------------------------------------------------------
-%% Function: init(Args) -> {ok, State} |
-%%                         {ok, State, Timeout} |
-%%                         ignore               |
-%%                         {stop, Reason}
-%% Description: Initiates the server
-%%--------------------------------------------------------------------
-init([]) ->
-    case mnesia:system_info(extra_db_nodes) of
-        [] -> %master node
-            do_init();
-        _ -> %slave node
-            ok
-    end,
-    {ok, state}.
-
-
-do_init() ->
+load() ->
     case emysql:select({mit_eoc_terminals, mem_attrs()}) of
         {ok, Cpes} ->
             lists:foreach(fun(Cpe) ->
@@ -179,74 +134,23 @@ do_init() ->
             {ok, state}
     end.
 
-%%--------------------------------------------------------------------
-%% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
-%%                                      {reply, Reply, State, Timeout} |
-%%                                      {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, Reply, State} |
-%%                                      {stop, Reason, State}
-%% Description: Handling call messages
-%%--------------------------------------------------------------------
-handle_call(stop, _From, State) ->
-	{stop, normal, ok, State};
-
-handle_call(Request, _From, State) ->
-	?ERROR("unexpected requrest: ~n", [Request]),
-    {reply, {error, unexpected_request}, State}.
-
-%%--------------------------------------------------------------------
-%% Function: handle_cast(Msg, State) -> {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, State}
-%% Description: Handling cast messages
-%%--------------------------------------------------------------------
-handle_cast({add, Dn, Cpe0}, State) ->
+add(Dn, Cpe0) ->
     Cpe = transform(Cpe0),
     case lookup(Dn) of
         {ok, Entry} ->
             update_cpe(Dn, Entry, Cpe);
         false ->
             insert_cpe(Dn, Cpe)
-    end,
-    {noreply, State};
+    end.
 
-handle_cast({update, Dn, Attrs}, State) ->
+update(Dn, Attrs) ->
     case lookup(Dn) of
         {ok, OldAttrs} ->
             update_cpe(Dn, OldAttrs, Attrs);
         false ->
             ?ERROR("cannot find cpe ~p", [Dn])
-    end,
-    {noreply, State};
+    end.
 
-handle_cast(Msg, State) ->
-	?ERROR("unexpected msg: ~p", [Msg]),
-    {noreply, State}.
-
-%%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%%--------------------------------------------------------------------
-handle_info(Info, State) ->
-    ?ERROR("unexpected info: ~p", [Info]),
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-%%--------------------------------------------------------------------
-%% Func: code_change(OldVsn, State, Extra) -> {ok, NewState}
-%% Description: Convert process state when code is changed
-%%--------------------------------------------------------------------
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-%%--------------------------------------------------------------------
-%%% Internal functions
-%%--------------------------------------------------------------------
 update_cpe(Dn, OldAttrs, Attrs) ->
     ?INFO("update cpe,dn:~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, Attrs]),
     case mit_util:merge(Attrs, OldAttrs) of

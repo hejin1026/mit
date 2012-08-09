@@ -8,10 +8,7 @@
 
 -import(extbif, [to_binary/1, to_list/1]).
 
--behavior(gen_server).
-
--export([start_link/0,
-         stop/0]).
+-mit_boot_load({eoc, load, "loading cpe", undefined}).
 
 -export([all/0,
          one/1,
@@ -25,26 +22,7 @@
          add/2,
          update/2]).
 
--export([init/1,
-		 handle_call/3,
-		 handle_cast/2,
-		 handle_info/2,
-		 terminate/2,
-		 code_change/3]).
-
 -define(SERVER, ?MODULE).
-
-%%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
-%%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-stop() ->
-	gen_server:call(?SERVER, stop).
-
-
 
 all() ->
     Sql = "select  'snmp' means, 'eoc' device_type,t1.* from mit_eoc_heads t1" ,
@@ -117,34 +95,7 @@ lookup(Dn) ->
         false
     end.
 
-add(Dn, Attrs) ->
-    gen_server:cast(?SERVER, {add, Dn, Attrs}).
-
-update(Dn, Attrs) ->
-    gen_server:cast(?SERVER, {update, Dn, Attrs}).
-
-
-%%====================================================================
-%% gen_server callbacks
-%%====================================================================
-%%--------------------------------------------------------------------
-%% Function: init(Args) -> {ok, State} |
-%%                         {ok, State, Timeout} |
-%%                         ignore               |
-%%                         {stop, Reason}
-%% Description: Initiates the server
-%%--------------------------------------------------------------------
-init([]) ->
-    case mnesia:system_info(extra_db_nodes) of
-        [] -> %master node
-            do_init();
-        _ -> %slave node
-            ok
-    end,
-    {ok, state}.
-
-
-do_init() ->
+load() ->
     case emysql:select({mit_eoc_heads, mem_attrs()}) of
         {ok, Eocs} ->
             lists:foreach(fun(Eoc) ->
@@ -152,7 +103,7 @@ do_init() ->
                {value, Id} = dataset:get_value(id, Eoc),
                 {value, Ip} = dataset:get_value(ip, Eoc),
                 Dn = "eoc=" ++ to_list(Ip),
-                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(eoc,Id), type = eoc, parent = undefined, data = Eoc},
+                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(eoc,Id), type = eoc, data = Eoc},
                 mit:update(Entry)
             end, Eocs),
             io:format("finish start eocs header : ~p ~n", [length(Eocs)]),
@@ -163,70 +114,28 @@ do_init() ->
     end.
 
 %%--------------------------------------------------------------------
-%% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
-%%                                      {reply, Reply, State, Timeout} |
-%%                                      {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, Reply, State} |
-%%                                      {stop, Reason, State}
-%% Description: Handling call messages
-%%--------------------------------------------------------------------
-handle_call(stop, _From, State) ->
-	{stop, normal, ok, State};
-
-handle_call(Request, _From, State) ->
-	?ERROR("unexpected requrest: ~n", [Request]),
-    {reply, {error, unexpected_request}, State}.
-
-%%--------------------------------------------------------------------
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
 %%                                      {noreply, State, Timeout} |
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
-handle_cast({add, Dn, Attrs}, State) ->
+add(Dn, Attrs) ->
     Eoc = transform(Attrs),
     case mit:lookup(Dn) of
         {ok, #entry{data = Entry} = _} ->
             update_eoc(Dn, Entry, Eoc);
         false ->
             insert_eoc(Dn, Eoc)
-    end,
-    {noreply, State};
+    end.
 
-handle_cast({update, Dn, Attrs}, State) ->
+update(Dn, Attrs) ->
     case mit:lookup(Dn) of
     {ok, #entry{data = Entry} = _} ->
         update_eoc(Dn, Entry, Attrs);
     false ->
         ?ERROR("cannot find eoc ~p", [Dn])
-    end,
-    {noreply, State};
-
-handle_cast(Msg, State) ->
-	?ERROR("unexpected msg: ~p", [Msg]),
-    {noreply, State}.
-
-%%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%%--------------------------------------------------------------------
-
-handle_info(Info, State) ->
-    ?ERROR("unexpected info: ~p", [Info]),
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-%%--------------------------------------------------------------------
-%%% Internal functions
-%%--------------------------------------------------------------------
+    end.
+    
 insert_eoc(Dn, Eoc) ->
     CreatedAt = {datetime, calendar:local_time()},
     case emysql:insert(mit_eoc_heads, [{created_at, CreatedAt}|Eoc]) of
@@ -249,7 +158,7 @@ update_eoc(Dn, OldAttrs, Attrs) ->
             Datetime = {datetime, calendar:local_time()},
             case emysql:update(mit_eoc_heads, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
             {updated, {1, _Id}} -> %update mit cache
-                mit:update(#entry{dn = Dn, uid = mit_util:uid(eoc,Id), type = eoc, parent = mit_util:bdn(Dn), data = MergedAttrs});
+                mit:update(#entry{dn = Dn, uid = mit_util:uid(eoc,Id), type = eoc, data = MergedAttrs});
             {updated, {0, _Id}} ->
                 ?WARNING("stale eoc: ~p", [Dn]);
             {error, Reason} ->
@@ -274,5 +183,4 @@ transform([H|T], Acc) ->
 
 transform([], Acc) ->
     Acc.
-
 

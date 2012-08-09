@@ -1,6 +1,6 @@
 -module(mit_gem).
 
--author('hejin-2-18').
+-author("hejin-2011-2-18").
 
 -include("mit.hrl").
 -include_lib("elog/include/elog.hrl").
