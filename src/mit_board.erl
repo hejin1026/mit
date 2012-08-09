@@ -10,9 +10,12 @@
 
 -mit_boot_load({board, load, "loading olt board", olt}).
 
+%start/stop
+-export([start_link/0,
+         stop/0]).
+
 %api
--export([load/0,
-        attrs/0,
+-export([attrs/0,
          lookup/1,
 		 add/2,
 		 add_boards/2,
@@ -41,7 +44,7 @@ lookup(Dn) ->
     false ->
 		false
     end.
-    
+
 load() ->
     {ok, Boards} = emysql:sqlquery("select t.ip,o.* from mit_boards o LEFT join mit_olts t on t.id = o.device_id
         where o.device_type = 1"),
@@ -62,18 +65,21 @@ get_dn(OltIp, Board) ->
       {value, Boardid} = dataset:get_value(boardid, Board),
       lists:concat(["slot=", to_list(Boardid),",olt=", to_list(OltIp)]).
 
+get_dn2(OltDn, BoardId) ->
+      lists:concat(["slot=", to_list(BoardId),",", to_list(OltDn)]).
+
 add(Dn, Attrs) ->
     case lookup(to_binary(Dn)) of
         {ok, OldAttrs} ->
             update_board(Dn, OldAttrs, Attrs);
         false ->
             insert_board(Dn, Attrs)
-    end.
+    end;
 
 add_boards(Dn, Boards) ->
     case mit:lookup(Dn) of
         {ok, #entry{uid = Id, type = Type, data = Entry}} ->
-            {ok, BoardInDb} = emysql:select(mit_boards, 
+            {ok, BoardInDb} = emysql:select(mit_boards,
                 ({'and', {device_id, mit_util:nid(Id)}, {device_type, mit_util:get_type(Type)}})),
             List = [{to_binary(proplists:get_value(boardid, Data)), Data} || Data <- Boards],
             DbList = [{to_binary(proplists:get_value(boardid, Data)), Data} || Data <- BoardInDb],
@@ -92,7 +98,7 @@ update(Dn, Attrs) ->
         false ->
             ?ERROR("cannot find board: ~p", [Dn])
     end.
-    
+
 insert_board(Dn, Board) ->
     case mit:lookup(mit_util:bdn(Dn)) of
     {ok, #entry{data = Entry, type = Type} = _} ->
@@ -105,7 +111,7 @@ insert_board(Dn, Board) ->
         do_insert(Type, Entry, Board, InsertMem);
     false ->
         ?WARNING("cannot find entry: ~p", [Dn])
-    end.
+    end;
 
 insert_board(Type, Entry, Board) ->
     do_insert(Type, Entry, Board, ignore).
@@ -139,7 +145,7 @@ update_board(Dn, OldAttrs, Attrs) ->
          Uid = "slot:" ++ integer_to_list(Id),
          mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = BoardInfo})
      end,
-    mit_util:do_update(mit_boards, Attrs, OldAttrs, UpdateMem).
+    mit_util:do_update(mit_boards, Attrs, OldAttrs, UpdateMem);
 
 update_board(OldAttrs, Attrs) ->
     mit_util:do_update(mit_boards, Attrs, OldAttrs, ingore).
