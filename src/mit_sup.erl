@@ -20,7 +20,7 @@ init([]) ->
     	Mgr =   {mit_mgr, {mit_mgr, start_link, []},permanent, 10, worker, [mit_mgr]},
         Dict = {mit_dict, {mit_dict, start_link, []},permanent, 10, worker, [mit_dict]},
         Area = {mit_area, {mit_area, start_link, []},permanent, 10, worker, [mit_area]},
-        [ Event, Agent, Mgr,Dict,Area|worker()];
+        [ Event, Agent, Mgr,Dict|worker()];
     _ -> %slave node
         worker()
     end,
@@ -28,4 +28,4 @@ init([]) ->
 
 worker() ->
      Mit = {mit, {mit, start_link, []}, permanent, 10, worker, [mit]},
-    [Mit].
+    [Mit,Area].
