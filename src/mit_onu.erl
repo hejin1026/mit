@@ -10,18 +10,14 @@
 
 -import(extbif, [to_binary/1]).
 
--behavior(gen_server).
-
--export([start_link/0,
-         stop/0]).
-
 -export([all/0,
          one/1,
          redisco/0
          ]).
 
 %api
--export([attrs/0,
+-export([load/0,
+        attrs/0,
          lookup/1,
          get_entry/1,
          get_notify_entry/1,

@@ -6,8 +6,7 @@
 -include_lib("elog/include/elog.hrl").
 
 %api
--export([attrs/0,
-         lookup/1,add/2]).
+-export([lookup/1,add/2]).
 
 -import(extbif, [to_list/1, to_binary/1]).
 
@@ -31,8 +30,8 @@ insert_splite(PonDn,Splite)->
      case emysql:insert(mit_splites, Splite) of
             {updated, {0, _}} ->
                   ?WARNING("cannot inserted Splite: ~p ~p", [PonDn, Splite]);
-            {updated, {1, PId}} ->
-                  ?WARNING("~p", [Reason]);
+            {updated, {1, _PId}} ->
+                  ok;
             {error, Reason} ->
                   ?WARNING("~p", [Reason])
       end.

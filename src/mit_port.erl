@@ -14,7 +14,8 @@
          ]).
 
 %api
--export([get_notify_entry/1,
+-export([load/0,
+        get_notify_entry/1,
          lookup/1,
 		 add/2,
 		 add_ports/2,
@@ -112,19 +113,6 @@ lookup(Dn) ->
         false ->
             false
     end.
-
-
-find_ports(Onu) ->
- 	{value, DevId} = dataset:get_value(id, Onu),
-		case emysql:select({mit_ports, {'and',[{device_id, DevId},{device_type,2}]}}) of
-				{ok, []} ->
-			          false;
-			    {ok, OldPorts} ->
-			          {ok,OldPorts};
-		     	{error, _} ->
-			         ?WARNING("select port error dn:~p",[Onu]),
-					 false
-				end.
 
 
 load() ->

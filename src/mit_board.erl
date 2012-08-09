@@ -10,12 +10,9 @@
 
 -mit_boot_load({board, load, "loading olt board", olt}).
 
-%start/stop
--export([start_link/0,
-         stop/0]).
-
 %api
--export([attrs/0,
+-export([load/0,
+        attrs/0,
          lookup/1,
 		 add/2,
 		 add_boards/2,
@@ -74,7 +71,7 @@ add(Dn, Attrs) ->
             update_board(Dn, OldAttrs, Attrs);
         false ->
             insert_board(Dn, Attrs)
-    end;
+    end.
 
 add_boards(Dn, Boards) ->
     case mit:lookup(Dn) of
@@ -111,7 +108,7 @@ insert_board(Dn, Board) ->
         do_insert(Type, Entry, Board, InsertMem);
     false ->
         ?WARNING("cannot find entry: ~p", [Dn])
-    end;
+    end.
 
 insert_board(Type, Entry, Board) ->
     do_insert(Type, Entry, Board, ignore).
@@ -145,7 +142,7 @@ update_board(Dn, OldAttrs, Attrs) ->
          Uid = "slot:" ++ integer_to_list(Id),
          mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = BoardInfo})
      end,
-    mit_util:do_update(mit_boards, Attrs, OldAttrs, UpdateMem);
+    mit_util:do_update(mit_boards, Attrs, OldAttrs, UpdateMem).
 
 update_board(OldAttrs, Attrs) ->
     mit_util:do_update(mit_boards, Attrs, OldAttrs, ingore).

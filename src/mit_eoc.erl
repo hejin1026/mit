@@ -10,7 +10,8 @@
 
 -mit_boot_load({eoc, load, "loading cpe", undefined}).
 
--export([all/0,
+-export([load/0,
+        all/0,
          one/1,
          redisco/0
          ]).

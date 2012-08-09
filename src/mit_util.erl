@@ -180,7 +180,7 @@ do_update(Table, Attrs, OldAttrs, CallFun) ->
             case emysql:update(Table, [{updated_at, {datetime, calendar:local_time()}} | MergedAttrs]) of
                 {updated, {1, Id}} ->
                     if is_function(CallFun) -> CallFun(Id, MergedAttrs);
-                        _ -> ok
+                        true -> ok
                     end;
                 {updated, {0, _}} ->
                     ?WARNING("stale board: ~p", [MergedAttrs]);

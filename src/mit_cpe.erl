@@ -16,7 +16,8 @@
          ]).
 
 %api
--export([attrs/0,
+-export([load/0,
+        attrs/0,
          lookup/1,
          get_entry/1,
          get_notify_entry/1,
