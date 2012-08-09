@@ -198,7 +198,7 @@ update_onus(OltDn, Onus) ->
 	            update_onu(OnuDn, OldOnu, Onu);
 	      	_ ->
 	            ?WARNING("cannot find onu ~p,~p", [OltDn,Onu])
-	     end.
+	     end
 		end,Onus).
 
 
