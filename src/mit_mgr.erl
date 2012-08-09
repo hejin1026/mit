@@ -36,6 +36,9 @@ start_link() ->
 sync() ->
     gen_server:cast(?SERVER, sync).
 
+sync_entry(Type) ->
+    gen_server:cast(?SERVER, {sync_entry, Type}).
+
 sync_entry(Type, Id) ->
     gen_server:cast(?SERVER, {sync_entry, Type, Id}).
 
@@ -57,6 +60,16 @@ handle_cast(sync, State) ->
     sync(olt, mit_olt:all()),
     sync(onu, mit_onu:all()),
 %    sync(port, mit_port:all_monet()),
+    {noreply, State};
+
+
+handle_cast({sync_entry, Type}, State) ->
+    case Type of
+        onu ->  sync(onu, mit_onu:all());
+        olt ->  sync(olt, mit_olt:all());
+        port -> sync(port, mit_port:all_monet());
+        _ ->    ignore
+    end,
     {noreply, State};
 
 handle_cast({sync_entry, Type, Id}, State) ->
