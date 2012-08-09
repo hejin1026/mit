@@ -145,24 +145,8 @@ update_board(Dn, OldAttrs, Attrs) ->
          Uid = "slot:" ++ integer_to_list(Id),
          mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = BoardInfo})
      end,
-    do_update(Attrs, OldAttrs, UpdateMem);
+    mit_util:do_update(mit_boards, Attrs, OldAttrs, UpdateMem);
 
 update_board(OldAttrs, Attrs) ->
-    do_update(Attrs, OldAttrs, ingore).
+    mit_util:do_update(mit_boards, Attrs, OldAttrs, ingore).
 
-do_update(Attrs, OldAttrs, CallFun) ->
-    case mit_util:merge(Attrs, OldAttrs) of
-        {changed, MergedAttrs} ->
-            case emysql:update(mit_boards, [{updated_at, {datetime, calendar:local_time()}} | MergedAttrs]) of
-                {updated, {1, Id}} -> 
-                    if is_function(CallFun) -> CallFun(Id, MergedAttrs);
-                        _ -> ok
-                    end;
-                {updated, {0, _}} -> 
-                    ?WARNING("stale board: ~p", [MergedAttrs]);
-                {error, Reason} ->
-                    ?ERROR("~p,~p", [MergedAttrs, Reason])
-            end;
-       {unchanged, _} ->
-            ok
-    end.
