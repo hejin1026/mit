@@ -23,7 +23,9 @@
          get_notify_entry/1,
 		 add/2,
          add_onus/2,
-		 update/2]).
+		 update/2,
+		 update_onus/2
+		]).
 
 -import(extbif, [to_list/1]).
 
@@ -124,7 +126,7 @@ lookup(Dn) ->
         false ->
             false
     end.
-    
+
 load() ->
     case emysql:sqlquery("select t.ip as olt_ip,o.* from mit_onus o LEFT join mit_olts t on t.id = o.olt_id ") of
         {ok, Onus} ->
@@ -186,6 +188,20 @@ add_onus(OltDn, Onus) ->
              ignore
      end.
 
+
+update_onus(OltDn, Onus) ->
+    case mit:lookup(OltDn) of
+        {ok, #entry{uid = OltId, data = Olt}} ->
+            {ok, OnusInDb} = emysql:select(mit_onus,{olt_id, mit_util:nid(OltId)}),
+            OnuList = [{to_binary(proplists:get_value(rdn,Onu)), Onu} || Onu <- Onus],
+            OnuDbList = [{to_binary(proplists:get_value(rdn,Onu)), Onu} || Onu <- OnusInDb],
+            {_AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(OnuList), mit_util:get_key(OnuDbList)),
+            [update_onu(get_dn2(OltDn, Rdn), proplists:get_value(Rdn, OnuDbList), proplists:get_value(Rdn, OnuList)) ||
+                Rdn <- UpdateList];
+         _ ->
+             ignore
+     end.
+
 insert_onu(Dn, Onu) when is_binary(Dn) ->
     case mit:lookup(mit_util:bdn(Dn)) of
         {ok, #entry{data = Olt, type = olt}} ->
@@ -218,9 +234,13 @@ insert_onu(Olt, Onu) when is_list(Olt) ->
 
 update_onu(Dn, OldAttrs, Attrs) ->
     %?INFO("update onu,dn:~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, Attrs]),
-    case mit_util:merge(Attrs, OldAttrs) of
-        {changed, MergedAttrs} ->
+    case mit_util:merge(NewAttrs, OldAttrs) of
+        {changed, MergedAttrs0} ->
            % ?WARNING("update onu dn:~p,newattr: ~p ~n,result : ~p", [Dn, Attrs, MergedAttrs]),
+			MergedAttrs = case dataset:get_value(device_manu, OldAttrs, false) of
+							{value, 2001} -> do_operstart_for_huawei(OldAttrs,MergedAttrs0);
+							_  	-> MergedAttrs0
+						   end,
             Datetime = {datetime, calendar:local_time()},
             case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs]) of
                 {updated, {1, Id}} -> %update mit cache
@@ -235,6 +255,22 @@ update_onu(Dn, OldAttrs, Attrs) ->
         {unchanged, _} ->
             ok
     end.
+
+do_operstart_for_huawei(OldAttrs,MergedAttrs0) ->
+	 ?INFO("do_operstart_for_huawei OldAttrs:~p~n,MergedAttrs: ~p ~n",  OldAttrs, MergedAttrs0]),
+	{value, OldOper} = dataset:get_value(operstate, OldAttrs, 0),
+    {value, NewOper} = dataset:get_value(operstate, MergedAttrs0,1),
+	if NewOper==3 andalso OldOper==2 ->
+		 ?WARNING("find exception operstate when update onu. OldAttrs:~p~n,MergedAttrs: ~p ~n",  OldAttrs, MergedAttrs0]),
+		lists:keyreplace(operstate, 1, MergedAttrs0, {operstate, 2});
+		true-> MergedAttrs0
+		end.
+
+
+
+
+
+
 
 transform(Attrs) ->
     transform(Attrs, []).
