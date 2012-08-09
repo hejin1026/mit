@@ -132,7 +132,7 @@ init([]) ->
 
             BootSteps = [{Name, Mod, Fun, Descr, Dep}
                                 || {Mod, [{Name, Fun, Descr, Dep}]}
-                                    <- extlib:module_with_attrs(master, mit_boot_load)],
+                                    <- extlib:module_with_attrs(mit, mit_boot_load)],
             [put({boot_step, element(1, Step)}, Step) || Step <- BootSteps],
             [boot_load_step(Step) || Step <- BootSteps],
             erlang:send_after(120 * 1000, self(), sync_changes);

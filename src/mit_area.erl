@@ -32,7 +32,7 @@ lookup(id,Id) ->
             false
     end;
 lookup(dn,Dn) ->
-    case mnesia:dirty_index_read(areas, Dn, #area.dn) of
+    case mnesia:dirty_index_read(area, Dn, #area.dn) of
         [Area] ->
             Area;
         [_Area|_] ->
@@ -50,7 +50,7 @@ stop() ->
 init([]) ->
     case mnesia:system_info(extra_db_nodes) of
         [] -> %master node
-            {atomic, ok} = mnesia:create_table(areas,
+            {atomic, ok} = mnesia:create_table(area,
                        [{ram_copies, [node()]},
                         {attributes, record_info(fields, area)}]),
             load_areas(),
