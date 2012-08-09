@@ -123,7 +123,7 @@ do_insert(Type, Entry, Board, CallFun) ->
         {updated,{1, Bid}} ->
             if is_function(CallFun) ->
                 CallFun(Bid, BoardInfo);
-             _ ->
+             true ->
                  ok
             end;
         {updated, {0, _}} -> %stale board?

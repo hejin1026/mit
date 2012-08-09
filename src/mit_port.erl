@@ -211,7 +211,7 @@ do_insert(Type, Entry, Port, Callback) ->
         {updated, {1, PId}} ->
             if is_function(Callback) ->
                 Callback(PId, PortInfo);
-             _ ->
+             true ->
                  ok
             end;
         {error, Reason} ->
