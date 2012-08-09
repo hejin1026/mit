@@ -198,7 +198,7 @@ update_onus(OltDn, Onus) ->
 	            update_onu(OnuDn, OldOnu, Onu);
 	      	_ ->
 	            ?WARNING("cannot find onu ~p,~p", [OltDn,Onu])
-	     end.
+	     end
 		end,Onus).
 
 
@@ -257,11 +257,11 @@ update_onu(Dn, OldAttrs, Attrs) ->
     end.
 
 do_operstart_for_huawei(OldAttrs,MergedAttrs0) ->
-	 ?INFO("do_operstart_for_huawei OldAttrs:~p~n,MergedAttrs: ~p ~n",  OldAttrs, MergedAttrs0]),
+	 ?INFO("do_operstart_for_huawei OldAttrs:~p~n,MergedAttrs: ~p ~n",  [OldAttrs, MergedAttrs0]),
 	{value, OldOper} = dataset:get_value(operstate, OldAttrs, 0),
     {value, NewOper} = dataset:get_value(operstate, MergedAttrs0,1),
 	if NewOper==3 andalso OldOper==2 ->
-		 ?WARNING("find exception operstate when update onu. OldAttrs:~p~n,MergedAttrs: ~p ~n",  OldAttrs, MergedAttrs0]),
+		 ?WARNING("find exception operstate when update onu. OldAttrs:~p~n,MergedAttrs: ~p ~n",  [OldAttrs, MergedAttrs0]),
 		lists:keyreplace(operstate, 1, MergedAttrs0, {operstate, 2});
 		true-> MergedAttrs0
 	end.
