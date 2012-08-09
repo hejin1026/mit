@@ -19,7 +19,6 @@ init([]) ->
         Agent = {mit_agent, {mit_agent, start_link, []},permanent, 10, worker, [mit_agent]},
     	Mgr =   {mit_mgr, {mit_mgr, start_link, []},permanent, 10, worker, [mit_mgr]},
         Dict = {mit_dict, {mit_dict, start_link, []},permanent, 10, worker, [mit_dict]},
-        Area = {mit_area, {mit_area, start_link, []},permanent, 10, worker, [mit_area]},
         [ Event, Agent, Mgr,Dict|worker()];
     _ -> %slave node
         worker()
@@ -28,4 +27,5 @@ init([]) ->
 
 worker() ->
      Mit = {mit, {mit, start_link, []}, permanent, 10, worker, [mit]},
+     Area = {mit_area, {mit_area, start_link, []},permanent, 10, worker, [mit_area]},
     [Mit,Area].
