@@ -178,8 +178,8 @@ add_onus(OltDn, Onus) ->
     case mit:lookup(OltDn) of
         {ok, #entry{uid = OltId, data = Olt}} ->
             {ok, OnusInDb} = emysql:select(mit_onus,{olt_id, mit_util:nid(OltId)}),
-            OnuList = [{to_binary(proplists:get_value(rdn,Onu)), Onu} || Onu <- Onus],
-            OnuDbList = [{to_binary(proplists:get_value(rdn,Onu)), Onu} || Onu <- OnusInDb],
+            OnuList = [{to_binary(proplists:get_value(rdn,Onu)), transform(Onu)} || Onu <- Onus],
+            OnuDbList = [{to_binary(proplists:get_value(rdn,Onu)), transform(Onu)} || Onu <- OnusInDb],
             {AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(OnuList), mit_util:get_key(OnuDbList)),
             [insert_onu(Olt, proplists:get_value(Rdn, OnuList)) || Rdn <- AddList],
             [update_onu(get_dn2(OltDn, Rdn), proplists:get_value(Rdn, OnuDbList), proplists:get_value(Rdn, OnuList)) ||
@@ -190,17 +190,17 @@ add_onus(OltDn, Onus) ->
 
 
 update_onus(OltDn, Onus) ->
-    case mit:lookup(OltDn) of
-        {ok, #entry{uid = OltId, data = Olt}} ->
-            {ok, OnusInDb} = emysql:select(mit_onus,{olt_id, mit_util:nid(OltId)}),
-            OnuList = [{to_binary(proplists:get_value(rdn,Onu)), Onu} || Onu <- Onus],
-            OnuDbList = [{to_binary(proplists:get_value(rdn,Onu)), Onu} || Onu <- OnusInDb],
-            {_AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(OnuList), mit_util:get_key(OnuDbList)),
-            [update_onu(get_dn2(OltDn, Rdn), proplists:get_value(Rdn, OnuDbList), proplists:get_value(Rdn, OnuList)) ||
-                Rdn <- UpdateList];
-         _ ->
-             ignore
-     end.
+	lists:foreach(fun(Onu) ->
+		Rdn = proplists:get_value(rdn,Onu,""),
+		OnuDn = get_dn2(OltDn, Rdn),
+	    case mit:lookup(OnuDn) of
+	        {ok, #entry{dn = Dn, type = onu, data = OldOnu}} ->
+	            update_onu(OnuDn, OldOnu, Onu);
+	      	_ ->
+	            ?WARNING("cannot find onu ~p,~p", [OltDn,Onu])
+	     end.
+		end,Onus).
+
 
 insert_onu(Dn, Onu) when is_binary(Dn) ->
     case mit:lookup(mit_util:bdn(Dn)) of
@@ -264,7 +264,7 @@ do_operstart_for_huawei(OldAttrs,MergedAttrs0) ->
 		 ?WARNING("find exception operstate when update onu. OldAttrs:~p~n,MergedAttrs: ~p ~n",  OldAttrs, MergedAttrs0]),
 		lists:keyreplace(operstate, 1, MergedAttrs0, {operstate, 2});
 		true-> MergedAttrs0
-		end.
+	end.
 
 
 
