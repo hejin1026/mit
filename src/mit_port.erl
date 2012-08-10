@@ -114,7 +114,6 @@ lookup(Dn) ->
             false
     end.
 
-
 load() ->
     ?ERROR("look mem port ...", []),
     {ok, Ports} = emysql:sqlquery("select t.ip as olt_ip,p.*
@@ -155,7 +154,7 @@ add_ports(Dn, Ports) ->
         [insert_port(onu, Onu, proplists:get_value(Rdn, List)) || Rdn <- AddList],
         [update_port(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList]
     end).
-    
+
 update_ports(Dn, Ports) ->
     do_ports(Dn, Ports, fun({_AddList, UpdateList},_Onu, DbList, List) ->
         [update_port(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList]
@@ -178,7 +177,7 @@ insert_port(Dn, Port) ->
     case mit:lookup(Bdn) of
         {ok, #entry{type = Type, data = Entry} = _} ->
             InsertMem = fun(Id, PortInfo) ->
-                 mit:update(#entry{dn = Dn, uid = mit_util:uid(port,Id), type = board,
+                 mit:update(#entry{dn = Dn, uid = mit_util:uid(port,Id), type = port,
                      parent = mit_util:bdn(Dn), data = PortInfo}),
                  add_splite(Dn,[{id, Id}|PortInfo]) %每加入一个PON口，同时生成一个一级分光器，直接挂在pon下
              end,
@@ -222,7 +221,7 @@ get_device_info(Type, Entry) ->
 
 update_port(Dn, OldAttrs, Attrs) ->
     UpdateMem = fun(Id, PortInfo) ->
-         mit:update(#entry{dn = Dn, uid = mit_util:uid(port,Id), type = board, parent = mit_util:bdn(Dn), data = PortInfo})
+         mit:update(#entry{dn = Dn, uid = mit_util:uid(port,Id), type = port, parent = mit_util:bdn(Dn), data = PortInfo})
      end,
     mit_util:do_update(mit_ports, Attrs, OldAttrs, UpdateMem).
 
