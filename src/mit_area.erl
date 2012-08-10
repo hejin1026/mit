@@ -64,7 +64,6 @@ init([]) ->
 load_areas() ->
     case emysql:select(areas) of
         {ok, Areas} ->
-		 	?INFO("areas ~p",[Areas]),
             lists:foreach(fun(Area) ->
                       {value, Dn} = dataset:get_value(area_dn, Area),
                       {value, Id} = dataset:get_value(id, Area),
