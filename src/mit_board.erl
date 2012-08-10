@@ -145,7 +145,7 @@ update_board(Dn, OldAttrs, Attrs) ->
          Uid = "slot:" ++ integer_to_list(Id),
          mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = BoardInfo})
      end,
-    mit_util:do_update(mit_boards, Attrs, OldAttrs, UpdateMem);
+    mit_util:do_update(mit_boards, Attrs, OldAttrs, UpdateMem).
 
 update_board(OldAttrs, Attrs) ->
     mit_util:do_update(mit_boards, Attrs, OldAttrs, ingore).
