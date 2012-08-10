@@ -36,13 +36,13 @@ update_gem(Dn, OldAttrs, Attrs) ->
     end,
     ?INFO("update gem, oldattr: ~p, newattr: ~p", [OldAttrs, NewAttrs]),
     case mit_util:merge(NewAttrs, OldAttrs) of
-        {changed, MergedAttrs} ->
+        {changed, MergedAttrs,_} ->
             ?INFO("update gem, mergeattr: ~p", [MergedAttrs]),
             {value, GemId} = dataset:get_value(id, OldAttrs, -1),
             LastChanged = {datetime, calendar:local_time()},
             MergedAttrs2 = lists:keydelete(id, 1, MergedAttrs),
             case emysql:update(mit_gems, [{updated_at, LastChanged} | MergedAttrs2], {id, GemId}) of
-                {updated, _} -> 
+                {updated, _} ->
                     ok;
                 {error, Reason} ->
                     ?ERROR("~p", [Reason])

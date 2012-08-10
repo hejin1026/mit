@@ -235,7 +235,7 @@ insert_onu(Olt, Onu) when is_list(Olt) ->
 update_onu(Dn, OldAttrs, NewAttrs) ->
     %?INFO("update onu,dn:~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, Attrs]),
     case mit_util:merge(NewAttrs, OldAttrs) of
-        {changed, MergedAttrs0} ->
+        {changed, MergedAttrs0,_} ->
            % ?WARNING("update onu dn:~p,newattr: ~p ~n,result : ~p", [Dn, Attrs, MergedAttrs]),
 			MergedAttrs = case dataset:get_value(device_manu, OldAttrs, false) of
 							{value, 2001} -> do_operstart_for_huawei(OldAttrs,MergedAttrs0);

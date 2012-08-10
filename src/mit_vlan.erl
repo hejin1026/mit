@@ -36,7 +36,7 @@ update_vlan(Dn, OldAttrs, Attrs) ->
     end,
     ?INFO("update vlan, ~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, NewAttrs]),
     case mit_util:merge(NewAttrs, OldAttrs) of
-        {changed, MergedAttrs} ->
+        {changed, MergedAttrs,_} ->
             {value, VlanId} = dataset:get_value(id, OldAttrs),
             LastChanged = {datetime, calendar:local_time()},
             MergedAttrs2 = lists:keydelete(id, 1, MergedAttrs),
