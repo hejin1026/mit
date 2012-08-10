@@ -73,7 +73,8 @@ load_areas() ->
                       mnesia:sync_dirty(fun() ->
                                 mnesia:write(#area{dn=Dn, id=Id, name=Name, type=area_type(Level), parent_id = ParentId})
                         end)
-              end, Areas);
+              end, Areas),
+	        io:format("finish start olt : ~p ~n", [length(Areas)]);
         {error, Reason} ->
             ?ERROR("load areas failure...~p",[Reason])
     end.
