@@ -54,8 +54,7 @@ init([]) ->
                        [{ram_copies, [node()]},
                         {attributes, record_info(fields, area)}]),
             load_areas(),
-		    erlang:send_after(30*60*1000, self(), load_areas),
-            io:format("finish start mit areas...~n",[]);
+		    erlang:send_after(30*60*1000, self(), load_areas);
         _ -> %slave node
             ok
     end,
