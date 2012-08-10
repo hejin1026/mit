@@ -232,7 +232,7 @@ insert_onu(Olt, Onu) when is_list(Olt) ->
             ok
     end.
 
-update_onu(Dn, OldAttrs, Attrs) ->
+update_onu(Dn, OldAttrs, NewAttrs) ->
     %?INFO("update onu,dn:~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, Attrs]),
     case mit_util:merge(NewAttrs, OldAttrs) of
         {changed, MergedAttrs0} ->
