@@ -159,7 +159,7 @@ boot_load_step({Name, Mod, Fun, Descr, Dep}) ->
 		true ->
 			boot_load_step(get({boot_step, Dep}))
 		end,
-		io:format("starting : ~p ~n", [Descr]),
+		?ERROR("~s", [Descr]),
 		Mod:Fun(),
 		put({boot_load, Name}, true)
 	end.
