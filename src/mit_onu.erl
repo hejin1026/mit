@@ -194,7 +194,7 @@ update_onus(OltDn, Onus) ->
 		Rdn = proplists:get_value(rdn,Onu,""),
 		OnuDn = get_dn2(OltDn, Rdn),
 	    case mit:lookup(OnuDn) of
-	        {ok, #entry{dn = Dn, type = onu, data = OldOnu}} ->
+	        {ok, #entry{dn = _Dn, type = onu, data = OldOnu}} ->
 	            update_onu(OnuDn, OldOnu, Onu);
 	      	_ ->
 	            ?WARNING("cannot find onu ~p,~p", [OltDn,Onu])
@@ -214,7 +214,6 @@ insert_onu(Dn, Onu) when is_binary(Dn) ->
 insert_onu(Olt, Onu) when is_list(Olt) ->
     {value, OltId} = dataset:get_value(id, Olt),
     {value, OltIp} = dataset:get_value(ip, Olt),
-    {value, DeviceManu} = dataset:get_value(device_manu, Olt),
     {value, CityId} = dataset:get_value(cityid, Olt),
     {value, DeviceName} = dataset:get_value(device_name, Onu,""),
     Now = {datetime, calendar:local_time()},
