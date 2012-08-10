@@ -101,8 +101,7 @@ insert_board(Dn, Board) ->
         InsertMem = fun(Id, BoardInfo) ->
              Uid = "slot:" ++ integer_to_list(Id),
              {value, OltIp} = dataset:get_value(ip, Entry),
-             Dn = get_dn(OltIp, BoardInfo),
-             mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = [{id, Id}|BoardInfo]})
+             mit:update(#entry{dn = get_dn(OltIp, BoardInfo), uid = Uid, type = board, parent = mit_util:bdn(Dn), data = [{id, Id}|BoardInfo]})
          end,
         do_insert(Type, Entry, Board, InsertMem);
     false ->
