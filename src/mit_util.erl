@@ -187,6 +187,6 @@ do_update(Table, Attrs, OldAttrs, CallFun) ->
                 {error, Reason} ->
                     ?ERROR("~p,~p", [MergedAttrs, Reason])
             end;
-       {unchanged, _} ->
+       {unchanged, _,_} ->
             ok
     end.

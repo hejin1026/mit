@@ -157,7 +157,7 @@ update_olt(Dn, OldAttrs, Attrs) ->
             {error, Reason} ->
                 ?ERROR("~p", [Reason])
             end;
-        {unchanged, _} ->
+        {unchanged, _,_} ->
             ok
     end.
 

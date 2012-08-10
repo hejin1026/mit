@@ -165,7 +165,7 @@ update_eoc(Dn, OldAttrs, Attrs) ->
             {error, Reason} ->
                 ?ERROR("error ~p", [Reason])
             end;
-        {unchanged, _} ->
+        {unchanged, _,_} ->
             ok
     end.
 

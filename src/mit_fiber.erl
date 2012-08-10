@@ -181,7 +181,7 @@ update_fiber(Dn, OldAttrs, Attrs) ->
             {value, DeviceType} = dataset:get_value(device_type, MergedAttrs),
             Uid = get_uid(DeviceType, DeviceId),
             mit:update(#entry{dn = Dn, uid = to_binary(Uid), type = fiber, data = MergedAttrs});
-        {unchanged, _} ->
+        {unchanged, _,_} ->
             ok
     end.
 

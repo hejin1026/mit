@@ -253,7 +253,7 @@ update_onu(Dn, OldAttrs, NewAttrs) ->
                 {error, Reason} ->
                     ?ERROR("~p", [Reason])
             end;
-        {unchanged, _} ->
+        {unchanged, _,_} ->
             ok
     end.
 
