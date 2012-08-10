@@ -59,7 +59,6 @@ mem_attrs() ->
      cityid,
      branch_id,
      sysoid,
-     name,
      ip,
      mask,
      mac,
