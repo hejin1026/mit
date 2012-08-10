@@ -207,15 +207,10 @@ do_insert(Type, Entry, Port, Callback) ->
 
 get_device_info(Type, Entry) ->
     {value, Id} = dataset:get_value(id, Entry),
-    {value, CityId} = dataset:get_value(cityid, Entry),
-    {value, DeviceManu} = dataset:get_value(device_manu, Entry),
+    {value, CityId} = dataset:get_value(cityid, Entry,0),
+    {value, DeviceManu} = dataset:get_value(device_manu, Entry,0),
     DeviceType = mit_util:get_type(Type),
-    MustInfo = [{device_type, DeviceType}, {device_id, Id},{device_manu,DeviceManu}],
-    MayInfo = case dataset:get_value(cityid, Entry) of
-        {value, CityId} -> [{cityid, CityId}];
-        {false, _} -> []
-    end,
-    MustInfo ++ MayInfo.
+    [{device_type, DeviceType}, {device_id, Id},{device_manu,DeviceManu},{cityid,CityId}].
 
 
 

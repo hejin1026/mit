@@ -130,8 +130,8 @@ do_insert(Type, Entry, Board, CallFun) ->
 
 get_device_info(Type, Entry) ->
     {value, Id} = dataset:get_value(id, Entry),
-    {value, CityId} = dataset:get_value(cityid, Entry),
-    {value, DeviceManu} = dataset:get_value(device_manu, Entry),
+    {value, CityId} = dataset:get_value(cityid, Entry,0),
+    {value, DeviceManu} = dataset:get_value(device_manu, Entry,0),
     DeviceType = mit_util:get_type(Type),
     [{device_type, DeviceType}, {device_id, Id},{device_manu,DeviceManu},{cityid,CityId}].
 
