@@ -176,7 +176,7 @@ get_key(List) ->
 
 do_update(Table, Attrs, OldAttrs, CallFun) ->
     case mit_util:merge(Attrs, OldAttrs) of
-        {changed, MergedAttrs} ->
+        {changed, MergedAttrs,_} ->
             case emysql:update(Table, [{updated_at, {datetime, calendar:local_time()}} | MergedAttrs]) of
                 {updated, {1, Id}} ->
                     if is_function(CallFun) -> CallFun(Id, MergedAttrs);
@@ -187,6 +187,6 @@ do_update(Table, Attrs, OldAttrs, CallFun) ->
                 {error, Reason} ->
                     ?ERROR("~p,~p", [MergedAttrs, Reason])
             end;
-       {unchanged, _} ->
+       {unchanged, _,_} ->
             ok
     end.

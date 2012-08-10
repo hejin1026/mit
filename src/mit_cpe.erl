@@ -23,7 +23,7 @@
          get_notify_entry/1,
 		 add/2,
 		 update/2]).
-     
+
 -import(extbif, [to_list/1]).
 
 all() ->
@@ -155,7 +155,7 @@ update(Dn, Attrs) ->
 update_cpe(Dn, OldAttrs, Attrs) ->
     ?INFO("update cpe,dn:~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, Attrs]),
     case mit_util:merge(Attrs, OldAttrs) of
-        {changed, MergedAttrs} ->
+        {changed, MergedAttrs,_} ->
            ?WARNING("update cpe dn:~p,newattr: ~p ~n,result : ~p", [Dn, Attrs, MergedAttrs]),
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
@@ -168,7 +168,7 @@ update_cpe(Dn, OldAttrs, Attrs) ->
                 {error, Reason} ->
                     ?ERROR("~p", [Reason])
             end;
-        {unchanged, _} ->
+        {unchanged, _,_} ->
             ok
     end.
 

@@ -15,7 +15,7 @@
 
 -behavior(gen_server).
 
--export([start_link/0, sync/0, sync_entry/2]).
+-export([start_link/0, sync/0, sync_entry/2,sync_entry/1]).
 
 -export([init/1,
          handle_call/3,
@@ -67,7 +67,7 @@ handle_cast({sync_entry, Type}, State) ->
     case Type of
         onu ->  sync(onu, mit_onu:all());
         olt ->  sync(olt, mit_olt:all());
-        port -> sync(port, mit_port:all_monet());
+      %  port -> sync(port, mit_port:all_monet());
         _ ->    ignore
     end,
     {noreply, State};

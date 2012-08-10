@@ -136,7 +136,7 @@ update(Dn, Attrs) ->
     false ->
         ?ERROR("cannot find eoc ~p", [Dn])
     end.
-    
+
 insert_eoc(Dn, Eoc) ->
     CreatedAt = {datetime, calendar:local_time()},
     case emysql:insert(mit_eoc_heads, [{created_at, CreatedAt}|Eoc]) of
@@ -153,7 +153,7 @@ insert_eoc(Dn, Eoc) ->
 update_eoc(Dn, OldAttrs, Attrs) ->
      ?INFO("update eoc: ~p，~p", [Dn,Attrs]),
       case mit_util:merge(Attrs, OldAttrs) of
-        {changed, MergedAttrs} ->
+        {changed, MergedAttrs,_} ->
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             Datetime = {datetime, calendar:local_time()},
@@ -165,7 +165,7 @@ update_eoc(Dn, OldAttrs, Attrs) ->
             {error, Reason} ->
                 ?ERROR("error ~p", [Reason])
             end;
-        {unchanged, _} ->
+        {unchanged, _,_} ->
             ok
     end.
 

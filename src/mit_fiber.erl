@@ -176,12 +176,12 @@ code_change(_OldVsn, State, _Extra) ->
 update_fiber(Dn, OldAttrs, Attrs) ->
     ?INFO("update fiber, oldattr: ~p, newattr: ~p", [OldAttrs, Attrs]),
     case mit_util:merge(Attrs, OldAttrs) of
-        {changed, MergedAttrs} ->
+        {changed, MergedAttrs,_} ->
             {value, DeviceId} = dataset:get_value(device_id, MergedAttrs),
             {value, DeviceType} = dataset:get_value(device_type, MergedAttrs),
             Uid = get_uid(DeviceType, DeviceId),
             mit:update(#entry{dn = Dn, uid = to_binary(Uid), type = fiber, data = MergedAttrs});
-        {unchanged, _} ->
+        {unchanged, _,_} ->
             ok
     end.
 

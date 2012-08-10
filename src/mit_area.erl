@@ -54,8 +54,7 @@ init([]) ->
                        [{ram_copies, [node()]},
                         {attributes, record_info(fields, area)}]),
             load_areas(),
-		    erlang:send_after(30*60*1000, self(), load_areas),
-            io:format("finish start mit areas...~n",[]);
+		    erlang:send_after(30*60*1000, self(), load_areas);
         _ -> %slave node
             ok
     end,
@@ -64,7 +63,6 @@ init([]) ->
 load_areas() ->
     case emysql:select(areas) of
         {ok, Areas} ->
-		 	?INFO("areas ~p",[Areas]),
             lists:foreach(fun(Area) ->
                       {value, Dn} = dataset:get_value(area_dn, Area),
                       {value, Id} = dataset:get_value(id, Area),
@@ -74,7 +72,8 @@ load_areas() ->
                       mnesia:sync_dirty(fun() ->
                                 mnesia:write(#area{dn=Dn, id=Id, name=Name, type=area_type(Level), parent_id = ParentId})
                         end)
-              end, Areas);
+              end, Areas),
+	        io:format("finish start areas : ~p ~n", [length(Areas)]);
         {error, Reason} ->
             ?ERROR("load areas failure...~p",[Reason])
     end.

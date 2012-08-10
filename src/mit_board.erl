@@ -10,12 +10,8 @@
 
 -mit_boot_load({board, load, "loading olt board", olt}).
 
-%start/stop
--export([start_link/0,
-         stop/0]).
-
 %api
--export([attrs/0,
+-export([load/0,attrs/0,
          lookup/1,
 		 add/2,
 		 add_boards/2,
@@ -74,7 +70,7 @@ add(Dn, Attrs) ->
             update_board(Dn, OldAttrs, Attrs);
         false ->
             insert_board(Dn, Attrs)
-    end;
+    end.
 
 add_boards(Dn, Boards) ->
     case mit:lookup(Dn) of
@@ -105,13 +101,12 @@ insert_board(Dn, Board) ->
         InsertMem = fun(Id, BoardInfo) ->
              Uid = "slot:" ++ integer_to_list(Id),
              {value, OltIp} = dataset:get_value(ip, Entry),
-             Dn = get_dn(OltIp, BoardInfo),
-             mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = [{id, Id}|BoardInfo]})
+             mit:update(#entry{dn = get_dn(OltIp, BoardInfo), uid = Uid, type = board, parent = mit_util:bdn(Dn), data = [{id, Id}|BoardInfo]})
          end,
         do_insert(Type, Entry, Board, InsertMem);
     false ->
         ?WARNING("cannot find entry: ~p", [Dn])
-    end;
+    end.
 
 insert_board(Type, Entry, Board) ->
     do_insert(Type, Entry, Board, ignore).
@@ -134,8 +129,8 @@ do_insert(Type, Entry, Board, CallFun) ->
 
 get_device_info(Type, Entry) ->
     {value, Id} = dataset:get_value(id, Entry),
-    {value, CityId} = dataset:get_value(cityid, Entry),
-    {value, DeviceManu} = dataset:get_value(device_manu, Entry),
+    {value, CityId} = dataset:get_value(cityid, Entry,0),
+    {value, DeviceManu} = dataset:get_value(device_manu, Entry,0),
     DeviceType = mit_util:get_type(Type),
     [{device_type, DeviceType}, {device_id, Id},{device_manu,DeviceManu},{cityid,CityId}].
 
@@ -145,7 +140,7 @@ update_board(Dn, OldAttrs, Attrs) ->
          Uid = "slot:" ++ integer_to_list(Id),
          mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = BoardInfo})
      end,
-    mit_util:do_update(mit_boards, Attrs, OldAttrs, UpdateMem);
+    mit_util:do_update(mit_boards, Attrs, OldAttrs, UpdateMem).
 
 update_board(OldAttrs, Attrs) ->
     mit_util:do_update(mit_boards, Attrs, OldAttrs, ingore).

@@ -194,7 +194,7 @@ update_onus(OltDn, Onus) ->
 		Rdn = proplists:get_value(rdn,Onu,""),
 		OnuDn = get_dn2(OltDn, Rdn),
 	    case mit:lookup(OnuDn) of
-	        {ok, #entry{dn = Dn, type = onu, data = OldOnu}} ->
+	        {ok, #entry{dn = _Dn, type = onu, data = OldOnu}} ->
 	            update_onu(OnuDn, OldOnu, Onu);
 	      	_ ->
 	            ?WARNING("cannot find onu ~p,~p", [OltDn,Onu])
@@ -223,7 +223,7 @@ insert_onu(Olt, Onu) when is_list(Olt) ->
             {value, Ip} = dataset:get_value(ip, Onu, undefined),
             Dn = get_dn(OltIp, Onu),
             mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id),ip=Ip,type = onu,
-                parent = mit_util:bdn(Dn),data = [{id, Id}|Onu]});
+                parent = mit_util:bdn(Dn),data = [{id, Id},{olt_id, OltId},{cityid, CityId},{name,DeviceName},{created_at, Now}|Onu]});
         {updated, {0, _}} ->
             ?WARNING("cannot find inserted onu: ~p ~p",  [Onu]);
         {error, Reason} ->
@@ -232,10 +232,10 @@ insert_onu(Olt, Onu) when is_list(Olt) ->
             ok
     end.
 
-update_onu(Dn, OldAttrs, Attrs) ->
+update_onu(Dn, OldAttrs, NewAttrs) ->
     %?INFO("update onu,dn:~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, Attrs]),
     case mit_util:merge(NewAttrs, OldAttrs) of
-        {changed, MergedAttrs0} ->
+        {changed, MergedAttrs0,_} ->
            % ?WARNING("update onu dn:~p,newattr: ~p ~n,result : ~p", [Dn, Attrs, MergedAttrs]),
 			MergedAttrs = case dataset:get_value(device_manu, OldAttrs, false) of
 							{value, 2001} -> do_operstart_for_huawei(OldAttrs,MergedAttrs0);
@@ -252,7 +252,7 @@ update_onu(Dn, OldAttrs, Attrs) ->
                 {error, Reason} ->
                     ?ERROR("~p", [Reason])
             end;
-        {unchanged, _} ->
+        {unchanged, _,_} ->
             ok
     end.
 
