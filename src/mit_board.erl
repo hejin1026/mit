@@ -10,12 +10,8 @@
 
 -mit_boot_load({board, load, "loading olt board", olt}).
 
-%start/stop
--export([start_link/0,
-         stop/0]).
-
 %api
--export([attrs/0,
+-export([load/0,attrs/0,
          lookup/1,
 		 add/2,
 		 add_boards/2,
