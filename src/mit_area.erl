@@ -74,7 +74,7 @@ load_areas() ->
                                 mnesia:write(#area{dn=Dn, id=Id, name=Name, type=area_type(Level), parent_id = ParentId})
                         end)
               end, Areas),
-	        io:format("finish start olt : ~p ~n", [length(Areas)]);
+	        io:format("finish start areas : ~p ~n", [length(Areas)]);
         {error, Reason} ->
             ?ERROR("load areas failure...~p",[Reason])
     end.
