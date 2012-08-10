@@ -59,6 +59,7 @@ mem_attrs() ->
      cityid,
      branch_id,
      sysoid,
+     name,
      ip,
      mask,
      mac,
@@ -99,7 +100,7 @@ load() ->
                 {value, Id} = dataset:get_value(id, Olt),
                 {value, Ip} = dataset:get_value(ip, Olt),
                 Dn = "olt=" ++ to_list(Ip),
-                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(olt,Id),ip=Ip, type = olt, parent = undefined, data = Olt},
+                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(olt,Id),ip=Ip, type = olt, parent = [], data = Olt},
                 mit:update(Entry)
             end, Olts),
             io:format("finish start olt : ~p ~n", [length(Olts)]),
@@ -143,7 +144,7 @@ insert_olt(Dn, Olt) ->
 update_olt(Dn, OldAttrs, Attrs) ->
    %   ?INFO("update olt: ~p，~p", [Dn,Attrs]),
       case mit_util:merge(Attrs, OldAttrs) of
-        {changed, MergedAttrs,_} ->
+        {changed, MergedAttrs} ->
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
             {value, Ip} = dataset:get_value(ip, MergedAttrs),
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
@@ -157,7 +158,7 @@ update_olt(Dn, OldAttrs, Attrs) ->
             {error, Reason} ->
                 ?ERROR("~p", [Reason])
             end;
-        {unchanged, _,_} ->
+        {unchanged, _} ->
             ok
     end.
 
