@@ -74,7 +74,7 @@ add(Dn, Attrs) ->
             update_board(Dn, OldAttrs, Attrs);
         false ->
             insert_board(Dn, Attrs)
-    end;
+    end.
 
 add_boards(Dn, Boards) ->
     case mit:lookup(Dn) of
@@ -111,7 +111,7 @@ insert_board(Dn, Board) ->
         do_insert(Type, Entry, Board, InsertMem);
     false ->
         ?WARNING("cannot find entry: ~p", [Dn])
-    end;
+    end.
 
 insert_board(Type, Entry, Board) ->
     do_insert(Type, Entry, Board, ignore).
