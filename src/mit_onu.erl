@@ -218,13 +218,13 @@ insert_onu(Olt, Onu) when is_list(Olt) ->
     {value, CityId} = dataset:get_value(cityid, Olt),
     {value, DeviceName} = dataset:get_value(device_name, Onu,""),
     Now = {datetime, calendar:local_time()},
-    case emysql:insert(mit_onus, [{olt_id, OltId},{cityid, CityId},{name,DeviceName},{device_manu,DeviceManu},{created_at, Now}|Onu]) of
+    case emysql:insert(mit_onus, [{olt_id, OltId},{cityid, CityId},{name,DeviceName},{created_at, Now}|Onu]) of
         {updated, {1, Id}} ->
        %     ?INFO("insert onu dn:~p,result: ~p", [Dn, Onu]),
             {value, Ip} = dataset:get_value(ip, Onu, undefined),
             Dn = get_dn(OltIp, Onu),
             mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id),ip=Ip,type = onu,
-                parent = mit_util:bdn(Dn),data = [{id, Id},{olt_id, OltId},{cityid, CityId},{name,DeviceName},{device_manu,DeviceManu},{created_at, Now}|Onu]});
+                parent = mit_util:bdn(Dn),data = [{id, Id},{olt_id, OltId},{cityid, CityId},{name,DeviceName},{created_at, Now}|Onu]});
         {updated, {0, _}} ->
             ?WARNING("cannot find inserted onu: ~p ~p",  [Onu]);
         {error, Reason} ->
