@@ -100,7 +100,7 @@ load() ->
                 {value, Id} = dataset:get_value(id, Olt),
                 {value, Ip} = dataset:get_value(ip, Olt),
                 Dn = "olt=" ++ to_list(Ip),
-                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(olt,Id),ip=Ip, type = olt, parent = [], data = Olt},
+                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(olt,Id),ip=Ip, type = olt, parent = <<>>, data = Olt},
                 mit:update(Entry)
             end, Olts),
             io:format("finish start olt : ~p ~n", [length(Olts)]),
