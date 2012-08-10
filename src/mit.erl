@@ -75,8 +75,8 @@ lookup(id, Uid) ->
     case mnesia:dirty_index_read(entry, Uid, #entry.uid) of
     [Entry] ->
         {ok, Entry};
-    [_Entry|_] ->
-        ?WARNING("more than one entry for one uid: ~p", [Uid]),
+    [Entry|Entry1] ->
+        ?WARNING("more than one entry for one uid: ~p,~p,~p~n", [Uid,Entry,Entry1]),
         false;
     [] ->
         false
