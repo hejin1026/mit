@@ -100,8 +100,8 @@ get_entry(onu, DevId) ->
 
 mit_entry(olt, Olt) ->
     mit_olt:get_entry(Olt);
-mit_entry(onu, Olt) ->
-    mit_onu:get_entry(Olt);
+mit_entry(onu, Onu) ->
+    mit_onu:get_entry(Onu);
 mit_entry(eoc, Eoc) ->
     mit_eoc:get_entry(Eoc);
 mit_entry(cpe, Cpe) ->
