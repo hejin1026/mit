@@ -66,7 +66,6 @@ mem_attrs() ->
      ip,
      cityid,
      sysoid,
-     name,
 	 splite_id,
      device_name,
      adminstate,
@@ -223,7 +222,7 @@ insert_onu(Olt, Onu) when is_list(Olt) ->
             {value, Ip} = dataset:get_value(ip, Onu, undefined),
             Dn = get_dn(OltIp, Onu),
             mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id),ip=Ip,type = onu,
-                parent = mit_util:bdn(Dn),data = [{id, Id},{olt_id, OltId},{cityid, CityId},{name,DeviceName},{created_at, Now}|Onu]});
+                parent = mit_util:bdn(Dn),data = [{id, Id},{olt_id, OltId},{cityid, CityId},{created_at, Now}|Onu]});
         {updated, {0, _}} ->
             ?WARNING("cannot find inserted onu: ~p ~p",  [Onu]);
         {error, Reason} ->
