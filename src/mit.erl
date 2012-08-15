@@ -51,15 +51,17 @@ lookup_entry(Dn) ->
                 {ok, Obj};
             board ->
                 {ok, Obj};
-            Other ->
-               ?WARNING("other entry:~p, ~p", [Dn, Other]),
+            _Other ->
                {ok, Obj}
         end;
     false ->
-	   ?WARNING("no entry found:~p", [Dn]),
         false
     end.
 
+lookup({ip, Ip}) ->
+    lookup(ip, Ip);
+lookup({id, Id}) ->
+    lookup(id, Id);
 lookup(Dn) ->
     lookup(dn, Dn).
 
@@ -70,7 +72,6 @@ lookup(dn, Dn) ->
     [] ->
         false
     end;
-
 lookup(id, Uid) ->
     case mnesia:dirty_index_read(entry, Uid, #entry.uid) of
     [Entry] ->
@@ -81,7 +82,6 @@ lookup(id, Uid) ->
     [] ->
         false
     end;
-
 lookup(ip, Ip) ->
     case mnesia:dirty_index_read(entry, Ip, #entry.ip) of
     [Entry] ->
