@@ -241,7 +241,8 @@ update_onu(Dn, OldAttrs, NewAttrs) ->
 						   end,
             Datetime = {datetime, calendar:local_time()},
             case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs]) of
-                {updated, {1, Id}} -> %update mit cache
+                {updated, {1, _}} -> %update mit cache
+					{value, Id} = dataset:get_value(id, OldAttrs),
                     {value, Ip} = dataset:get_value(ip, MergedAttrs, undefined),
                     mit:update(#entry{dn = Dn, uid = mit_util:uid(onu,Id), ip = Ip,
                         type = onu, parent = mit_util:bdn(Dn), data = MergedAttrs});
