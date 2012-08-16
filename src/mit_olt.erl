@@ -59,6 +59,7 @@ mem_attrs() ->
      cityid,
      branch_id,
      sysoid,
+	 olt_pon_type,
      ip,
      mask,
      mac,

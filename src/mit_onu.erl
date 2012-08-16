@@ -87,7 +87,6 @@ mem_attrs() ->
      slot_no,
      upmaximumbw,
      downmaximumbw,
-     splite_id,
      entrance_id,
      ponid,
      snmp_r,
