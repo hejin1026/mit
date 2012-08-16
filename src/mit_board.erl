@@ -84,7 +84,7 @@ add_boards(Dn, Boards) ->
             [insert_board(Type, Entry, proplists:get_value(Rdn, List)) || Rdn <- AddList],
             [update_board(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList];
          _ ->
-             ignore
+             ?ERROR("cannot find board: ~p", [Dn])
      end.
 
 update_boards(Dn, Boards) ->
@@ -97,7 +97,7 @@ update_boards(Dn, Boards) ->
             {_AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(List), mit_util:get_key(DbList)),
             [update_board(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList];
          _ ->
-             ignore
+             ?ERROR("cannot find board: ~p", [Dn])
      end.
 
 
