@@ -15,7 +15,8 @@
          lookup/1,
 		 add/2,
 		 add_boards/2,
-		 update/2]).
+		 update/2,
+		 update_boards/2]).
 
 -define(SERVER, ?MODULE).
 
@@ -81,6 +82,19 @@ add_boards(Dn, Boards) ->
             DbList = [{to_binary(proplists:get_value(boardid, Data)), Data} || Data <- BoardInDb],
             {AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(List), mit_util:get_key(DbList)),
             [insert_board(Type, Entry, proplists:get_value(Rdn, List)) || Rdn <- AddList],
+            [update_board(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList];
+         _ ->
+             ignore
+     end.
+
+update_boards(Dn, Boards) ->
+    case mit:lookup(Dn) of
+        {ok, #entry{uid = Id, type = Type, data = Entry}} ->
+            {ok, BoardInDb} = emysql:select(mit_boards,
+                ({'and', {device_id, mit_util:nid(Id)}, {device_type, mit_util:get_type(Type)}})),
+            List = [{to_binary(proplists:get_value(boardid, Data)), Data} || Data <- Boards],
+            DbList = [{to_binary(proplists:get_value(boardid, Data)), Data} || Data <- BoardInDb],
+            {_AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(List), mit_util:get_key(DbList)),
             [update_board(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList];
          _ ->
              ignore
