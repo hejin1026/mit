@@ -91,8 +91,7 @@ mem_attrs() ->
      ponid,
      snmp_r,
      snmp_w,
-     snmp_v,
-	 scenarios
+     snmp_v
     ].
 
 
