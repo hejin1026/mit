@@ -64,7 +64,6 @@ mem_attrs() ->
      mac,
      device_manu,
      device_kind,
-     avail_status,
      is_discovery,
      discovery_state,
      olt_state,
