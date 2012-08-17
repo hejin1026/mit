@@ -59,6 +59,7 @@ mem_attrs() ->
      cityid,
      branch_id,
      sysoid,
+	 olt_pon_type,
      ip,
      mask,
      mac,
@@ -148,8 +149,8 @@ update_olt(Dn, OldAttrs, Attrs) ->
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             Datetime = {datetime, calendar:local_time()},
             case emysql:update(mit_olts, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
-            {updated, {1, _Id}} -> %update mit cache
-                mit:update(#entry{dn = Dn, uid = mit_util:uid(olt,Id), ip=Ip,type = olt,
+            {updated, {1, _}} -> %update mit cache
+                mit:update(#entry{dn = Dn, ip=Ip,type = olt,uid=mit_util:uid(olt, Id),
                     parent = mit_util:bdn(Dn), data = MergedAttrs});
             {updated, {0, _Id}} ->
                 ?WARNING("stale Olt: ~p", [Dn]);
