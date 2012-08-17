@@ -140,7 +140,7 @@ load() ->
                   {value, Rdn} = dataset:get_value(rdn, Onu),
                   OltDn = lists:concat(["olt=", to_list(OltIp)]),
                   Dn = lists:concat(["onu=", to_list(Rdn),",", OltDn]),
-                  mit:update(Entry#entry{dn = to_binary(Dn), parent = OltDn})
+                  mit:update(Entry#entry{dn = list_to_binary(Dn), parent = list_to_binary(OltDn)})
           end, Onus),
           ?ERROR("finish start onu : ~p ~n", [length(Onus)]);
         {error, Reason} ->

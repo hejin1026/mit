@@ -52,7 +52,7 @@ load() ->
         {value, OltIp} = dataset:get_value(ip, Board),
         OltDn = lists:concat(["olt=", to_list(OltIp)]),
         Dn = get_dn(OltIp, Board),
-        mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = OltDn,
+        mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = to_binary(OltDn),
             type = board, data = mit_util:format(mit, attrs(), Board)})
     end, Boards),
     ?ERROR("finish start board : ~p ~n", [length(Boards)]).
