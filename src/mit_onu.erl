@@ -149,10 +149,10 @@ load() ->
 
 get_dn(OltIp, Onu) ->
       {value, Rdn} = dataset:get_value(rdn, Onu),
-      lists:concat(["onu=", to_list(Rdn),",olt=", to_list(OltIp)]).
+      list_to_binary(lists:concat(["onu=", to_list(Rdn),",olt=", to_list(OltIp)])).
 
 get_dn2(OltDn, Rdn) ->
-      lists:concat(["onu=", to_list(Rdn),",", to_list(OltDn)]).
+      list_to_binary(lists:concat(["onu=", to_list(Rdn),",", to_list(OltDn)])).
 
 add(Dn, Onu0) ->
     Onu = transform(Onu0),

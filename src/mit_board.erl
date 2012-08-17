@@ -60,10 +60,10 @@ load() ->
 
 get_dn(OltIp, Board) ->
       {value, Boardid} = dataset:get_value(boardid, Board),
-      lists:concat(["slot=", to_list(Boardid),",olt=", to_list(OltIp)]).
+      list_to_binary(lists:concat(["slot=", to_list(Boardid),",olt=", to_list(OltIp)])).
 
 get_dn2(OltDn, BoardId) ->
-      lists:concat(["slot=", to_list(BoardId),",", to_list(OltDn)]).
+      list_to_binary(lists:concat(["slot=", to_list(BoardId),",", to_list(OltDn)])).
 
 add(Dn, Attrs) ->
     case lookup(to_binary(Dn)) of
