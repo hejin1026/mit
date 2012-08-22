@@ -27,7 +27,7 @@ run(onus, {pon_dn, Dn}) ->
 
 run(onu, {olt_dn, Dn}, Items) ->
     Entries = mnesia:dirty_index_read(entry, Dn, #entry.parent),
-   filter_device_info(Entries, Items);
+   filter_device_info(Entries, Items).
 
 
 filter_device_info([], _Items) ->
