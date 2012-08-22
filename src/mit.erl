@@ -151,6 +151,7 @@ boot_load_step({Name, Mod, Fun, Descr, Dep}) ->
 		ok;
 	_ ->
 		DepLoaded = get({boot_load, Dep}),
+        ?ERROR("begin to load ~s", [Name]),
 		if
 		Dep =:= undefined ->
 			ok;
@@ -159,7 +160,7 @@ boot_load_step({Name, Mod, Fun, Descr, Dep}) ->
 		true ->
 			boot_load_step(get({boot_step, Dep}))
 		end,
-		?ERROR("~s", [Descr]),
+		?ERROR("end with load ~p, ~s", [Name, Descr]),
 		Mod:Fun(),
 		put({boot_load, Name}, true)
 	end.
