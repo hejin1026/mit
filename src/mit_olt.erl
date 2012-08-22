@@ -63,6 +63,8 @@ mem_attrs() ->
      ip,
      mask,
      mac,
+	 ping_status,
+	 snmp_status,
      device_manu,
      device_kind,
      is_discovery,

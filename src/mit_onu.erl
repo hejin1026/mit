@@ -77,6 +77,8 @@ mem_attrs() ->
      device_kind,
      device_manu,
      macaddr,
+	 ping_status,
+	 snmp_status,
      olt_id,
      onu_no,
      onu_state,
