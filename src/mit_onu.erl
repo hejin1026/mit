@@ -281,10 +281,14 @@ transform([{ip, Ip} | T], Acc) ->
     Ip1 = to_list(Ip),
     if Ip1 == "0.0.0.0" ->
             transform(T, Acc);
-        Ip1 == "255.255.255.255" ->
+       Ip1 == "255.255.255.255" ->
+            transform(T, Acc);
+       Ip1 == "" ->
+            transform(T, Acc);
+       Ip1 == "--" ->
             transform(T, Acc);
         true ->
-            transform(T, [{ip, Ip}|Acc])
+            transform(T, [{ip, Ip},{collect_type,2}|Acc])
     end;
 transform([{vendor, Vendor}|T], Acc) ->
     ManuId = mit_dict:lookup(vendor, Vendor),
