@@ -11,19 +11,23 @@
 -import(extbif, [to_binary/1]).
 
 -include("mit.hrl").
+-include_lib("elog/include/elog.hrl").
 
 %pon下的onu
-run(onus, {dn, Dn}) ->
+run(onus, {pon_dn, Dn}) ->
     case mnesia:dirty_read(entry, to_binary(Dn)) of
-        [#entry{type = port, data = Data} = Entry] ->
+        [#entry{type = port, data = Data} = _Entry] ->
             Entries = mnesia:dirty_index_read(entry, mit_util:bdn(Dn), #entry.parent),
             {value,SlotNo} = dataset:get_value(slot_no, Data),
             {value,PortNo} = dataset:get_value(port_no, Data),
-            filter_device_info(Entries, [{type, onu}, {slot_no, SlotNo}, {port_no, PortNo}]),
-            {ok, Entry};
+            filter_device_info(Entries, [{type, onu}, {slot_no, SlotNo}, {port_no, PortNo}]);
         [] ->
-            false
-    end;
+            []
+    end.
+
+run(onu, {olt_dn, Dn}, Items) ->
+    Entries = mnesia:dirty_index_read(entry, Dn, #entry.parent),
+   filter_device_info(Entries, Items).
 
 
 filter_device_info([], _Items) ->
@@ -32,7 +36,7 @@ filter_device_info(Entries, Items) ->
     Entries2 = lists:filter(fun(Device) ->
                 check_device_info(Items, Device, true)
             end, Entries),
-    ?INFO("get device :~p, ~n filter : ~p, ~n item: ~p", [Entries, Entries2, Items]),
+%    ?INFO("get device :~p, ~n filter : ~p, ~n item: ~p", [Entries, Entries2, Items]),
     Entries2.
 
 
