@@ -41,13 +41,13 @@ rdn(Dn) when is_list(Dn) ->
     list_to_binary(Rdn).
 
 uid(1, Id) ->
-    to_binary("olt:" ++ integer_to_list(Id));
+    uid(olt, Id);
 uid(2, Id) ->
-    to_binary("onu:" ++ integer_to_list(Id));
+    uid(onu, Id);
 uid(3, Id) ->
-    to_binary("eoc:" ++ integer_to_list(Id));
+    uid(eoc, Id);
 uid(4, Id) ->
-    to_binary("cpe:" ++ integer_to_list(Id));
+    uid(cpe, Id);
 uid(eoc, Id) ->
     to_binary("eoc:" ++ integer_to_list(Id));
 uid(cpe, Id) ->

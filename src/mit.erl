@@ -92,10 +92,9 @@ lookup(ip, Ip) ->
         false
     end.
 
-update(AtomType, Dn, Id, Data) ->
-    Entry = #entry{dn = Dn, uid = mit_util:uid(AtomType, Id), parent = mit_util:bdn(Dn),
-                type = AtomType, data = mit_util:mit_entry(AtomType, Data)},
-    update(Entry).
+update(AtomType, Dn, Id, Ip, Data) ->
+    update(#entry{dn = Dn, uid = mit_util:uid(AtomType, Id), ip= Ip, parent = mit_util:bdn(Dn),
+        type = AtomType, data = mit_util:mit_entry(AtomType, Data)}).
 
 update(Entry) when is_record(Entry, entry) ->
     mnesia:sync_dirty(fun() ->
@@ -242,8 +241,9 @@ do_handle_change(AtomType, DevId, Callback) ->
         [Obj|_] ->
             NotifyEntry = mit_util:notify_entry(AtomType, Obj),
             {value, Dn} = dataset:get_value(dn, NotifyEntry),
+            {value, Ip} = dataset:get_value(ip, NotifyEntry),
             %% equal to mit_event_h
-            update(AtomType, Dn, DevId, Obj),
+            update(AtomType, Dn, DevId, Ip, Obj),
             ?INFO("mit_update,entry:~p,~n obj:~p",[NotifyEntry,Obj]),
             Callback(Dn, NotifyEntry);
         [] ->
