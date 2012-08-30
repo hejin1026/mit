@@ -32,7 +32,7 @@
 
 all() ->
     Sql = "select t2.means as means, t1.* ,'onu' device_type  from mit_onus t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null",
+        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.collect_type=2",
     get_data(Sql).
 
 one(Id) ->
@@ -77,6 +77,8 @@ mem_attrs() ->
      device_kind,
      device_manu,
      macaddr,
+	 ping_status,
+	 snmp_status,
      olt_id,
      slot_no,
      port_no,
@@ -279,10 +281,14 @@ transform([{ip, Ip} | T], Acc) ->
     Ip1 = to_list(Ip),
     if Ip1 == "0.0.0.0" ->
             transform(T, Acc);
-        Ip1 == "255.255.255.255" ->
+       Ip1 == "255.255.255.255" ->
+            transform(T, Acc);
+       Ip1 == "" ->
+            transform(T, Acc);
+       Ip1 == "--" ->
             transform(T, Acc);
         true ->
-            transform(T, [{ip, Ip}|Acc])
+            transform(T, [{ip, Ip},{collect_type,2}|Acc])
     end;
 transform([{vendor, Vendor}|T], Acc) ->
     ManuId = mit_dict:lookup(vendor, Vendor),
