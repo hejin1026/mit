@@ -151,13 +151,13 @@ format(notify, [device_kind|Attrs], Entry, Data) ->
 
 format(notify, [collect_status|Attrs], Entry, Data) ->
     {value, Value} = dataset:get_value(collect_status, Entry,1),
-    format(notify, Attrs, Entry, [{oper_state, Value}|Data]);
+    format(notify, Attrs, Entry, [{collect_status, Value}|Data]);
 format(notify, [olt_state|Attrs], Entry, Data) ->
     {value, Value} = dataset:get_value(olt_state, Entry),
-    format(notify, Attrs, Entry, [{oper_state, Value}|Data]);
+    format(notify, Attrs, Entry, [{collect_status, Value}|Data]);
 format(notify, [onu_state|Attrs], Entry, Data) ->
     {value, Value} = dataset:get_value(onu_state, Entry),
-    format(notify, Attrs, Entry, [{oper_state, Value}|Data]);
+    format(notify, Attrs, Entry, [{collect_status, Value}|Data]);
 format(notify, [device_manu|Attrs], Entry, Data) ->
     {value, VendorId} = dataset:get_value(device_manu, Entry),
     Vendor =  mit_dict:lookup(vendor, VendorId),
