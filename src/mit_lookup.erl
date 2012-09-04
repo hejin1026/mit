@@ -23,6 +23,28 @@ run(onus, {pon_dn, Dn}) ->
             filter_device_info(Entries, [{type, onu}, {slot_no, SlotNo}, {port_no, PortNo}]);
         [] ->
             []
+    end;
+
+run(onus, {board_dn, Dn}) ->
+    case mnesia:dirty_read(entry, to_binary(Dn)) of
+        [#entry{type = board, data = Data} = _Entry] ->
+            Entries = mnesia:dirty_index_read(entry, mit_util:bdn(Dn), #entry.parent),
+            {value,SlotNo} = dataset:get_value(slot_no, Data),
+            filter_device_info(Entries, [{type, onu}, {slot_no, SlotNo}]);
+        [] ->
+            []
+    end;
+
+run(entry, {onu, Dn}) ->
+    case mnesia:dirty_read(entry, to_binary(Dn)) of
+        [#entry{type = onu, data = Data} = _Entry] ->
+            Entries = mnesia:dirty_index_read(entry, mit_util:bdn(Dn), #entry.parent),
+            {value,SlotNo} = dataset:get_value(slot_no, Data),
+            {value,PortNo} = dataset:get_value(port_no, Data),
+            filter_device_info(Entries, [{type, port}, {slot_no, SlotNo}, {port_no, PortNo}]) ++
+            filter_device_info(Entries, [{type, board}, {slot_no, SlotNo}]);
+        [] ->
+            []
     end.
 
 run(onu, {olt_dn, Dn}, Items) ->
