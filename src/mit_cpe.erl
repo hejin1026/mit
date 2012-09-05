@@ -114,7 +114,7 @@ load() ->
     case emysql:select({mit_eoc_terminals, mem_attrs()}) of
         {ok, Cpes} ->
             lists:foreach(fun(Cpe) ->
-	              io:format("I want look at cpe: ~p ~n", [Cpe]),
+	              %io:format("I want look at cpe: ~p ~n", [Cpe]),
                   {value, Id} = dataset:get_value(id, Cpe),
                   {value, EocId} = dataset:get_value(eoc_id, Cpe),
                   {value, Rdn} = dataset:get_value(rdn, Cpe),

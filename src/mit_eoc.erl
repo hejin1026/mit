@@ -100,7 +100,7 @@ load() ->
     case emysql:select({mit_eoc_heads, mem_attrs()}) of
         {ok, Eocs} ->
             lists:foreach(fun(Eoc) ->
-	              io:format("I want look at Eoc: ~p ~n", [Eoc]),
+	            %  io:format("I want look at Eoc: ~p ~n", [Eoc]),
                {value, Id} = dataset:get_value(id, Eoc),
                 {value, Ip} = dataset:get_value(ip, Eoc),
                 Dn = "eoc=" ++ to_list(Ip),
