@@ -150,8 +150,8 @@ update(Dn, Attrs) ->
 
 
 add_ports(Dn, Ports) ->
-    do_ports(Dn, Ports, fun({AddList, UpdateList}, Onu, DbList, List) ->
-        [insert_port(onu, Onu, proplists:get_value(Rdn, List)) || Rdn <- AddList],
+    do_ports(Dn, Ports, fun({AddList, UpdateList}, Type,Entry, DbList, List) ->
+        [insert_port(Type, Entry, proplists:get_value(Rdn, List)) || Rdn <- AddList],
         [update_port(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList]
     end).
 
@@ -162,12 +162,12 @@ update_ports(Dn, Ports) ->
 
 do_ports(Dn, Ports, Callback) ->
     case mit:lookup(Dn) of
-	        {ok, #entry{uid= Id, type = onu, data = Onu} = _} ->
-	    		{ok, PortInDb} = emysql:select({mit_ports, {'and',[{device_id, mit_util:nid(Id)},{device_type,2}]}}),
+	        {ok, #entry{uid= Id, type = Type, data = Onu} = _} ->
+	    		{ok, PortInDb} = emysql:select({mit_ports, {'and',[{device_id, mit_util:nid(Id)},{device_type,mit_util:get_type(Type)}]}}),
                 List = [{to_binary(proplists:get_value(port_index, R)), R} || R <- Ports],
                 DbList = [{to_binary(proplists:get_value(port_index, R)), R} || R <- PortInDb],
                 {AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(List), mit_util:get_key(DbList)),
-                Callback({AddList, UpdateList}, Onu, DbList, List);
+                Callback({AddList, UpdateList},Type, Onu, DbList, List);
 		    false ->
 	        	?WARNING("cannot find entry: ~p", [Dn])
 	end.
@@ -186,8 +186,8 @@ insert_port(Dn, Port) ->
             ?WARNING("cannot find entry: ~p", [Bdn])
     end.
 
-insert_port(Type, Onu, Port) ->
-    do_insert(Type, Onu, Port, ingore).
+insert_port(Type, Entry, Port) ->
+    do_insert(Type, Entry, Port, ingore).
 
 do_insert(Type, Entry, Port, Callback) ->
     % ?INFO("info: insert port dn: ~p, entry: ~p", [Dn, Entry]),
