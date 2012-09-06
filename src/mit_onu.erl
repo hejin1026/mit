@@ -11,6 +11,7 @@
 -import(extbif, [to_binary/1]).
 
 -export([all/0,
+        snmp_all/0,
          one/1,
          redisco/0
          ]).
