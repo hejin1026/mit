@@ -152,7 +152,7 @@ update_olt(Dn, OldAttrs, Attrs) ->
             Datetime = {datetime, calendar:local_time()},
             case emysql:update(mit_olts, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
             {updated, {1, _}} -> %update mit cache
-                mit:update(#entry{dn = Dn, ip=Ip,type = olt,uid=mit_util:uid(olt, Id),
+                mit:update(#entry{dn = to_binary(Dn), ip=Ip,type = olt,uid=mit_util:uid(olt, Id),
                     parent = mit_util:bdn(Dn), data = MergedAttrs});
             {updated, {0, _Id}} ->
                 ?WARNING("stale Olt: ~p", [Dn]);
