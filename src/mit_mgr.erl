@@ -65,6 +65,7 @@ handle_cast(sync, State) ->
 
 handle_cast({sync_entry, Type}, State) ->
     case Type of
+        snmp_onu ->  sync(onu, mit_onu:snmp_all());
         onu ->  sync(onu, mit_onu:all());
         olt ->  sync(olt, mit_olt:all());
         port -> sync(port, mit_port:all_monet());
