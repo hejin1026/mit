@@ -280,13 +280,13 @@ transform([], Acc) ->
 transform([{ip, Ip} | T], Acc) ->
     Ip1 = to_list(Ip),
     if Ip1 == "0.0.0.0" ->
-            transform(T, Acc);
+            transform(T, [{collect_type,1}|Acc]);
        Ip1 == "255.255.255.255" ->
-            transform(T, Acc);
+            transform(T,  [{collect_type,1}|Acc]);
        Ip1 == "" ->
-            transform(T, Acc);
+            transform(T,  [{collect_type,1}|Acc]);
        Ip1 == "--" ->
-            transform(T, Acc);
+            transform(T,  [{collect_type,1}|Acc]);
         true ->
             transform(T, [{ip, Ip},{collect_type,2}|Acc])
     end;
