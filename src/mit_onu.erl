@@ -251,7 +251,7 @@ update_onu(Dn, OldAttrs, NewAttrs) ->
                 {updated, {1, _}} -> %update mit cache
 					{value, Id} = dataset:get_value(id, OldAttrs),
                     {value, Ip} = dataset:get_value(ip, MergedAttrs, undefined),
-                    mit:update(#entry{dn = Dn, uid = mit_util:uid(onu,Id), ip = Ip,
+                    mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id), ip = Ip,
                         type = onu, parent = mit_util:bdn(Dn), data = MergedAttrs});
                 {updated, {0, Id}} -> %stale onu?
                     ?WARNING("stale onu: ~p,~p", [Dn, Id]);
