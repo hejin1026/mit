@@ -89,7 +89,7 @@ add_boards(Dn, Boards) ->
 
 update_boards(Dn, Boards) ->
     case mit:lookup(Dn) of
-        {ok, #entry{uid = Id, type = Type, data = Entry}} ->
+        {ok, #entry{uid = Id, type = Type, data = _Entry}} ->
             {ok, BoardInDb} = emysql:select(mit_boards,
                 ({'and', {device_id, mit_util:nid(Id)}, {device_type, mit_util:get_type(Type)}})),
             List = [{to_binary(proplists:get_value(boardid, Data)), Data} || Data <- Boards],
