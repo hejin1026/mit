@@ -55,7 +55,7 @@ load() ->
         mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = to_binary(OltDn),
             type = board, data = mit_util:format(mit, attrs(), Board)})
     end, Boards),
-    ?ERROR("finish start board : ~p ~n", [length(Boards)]).
+    io:format("finish start board : ~p ~n", [length(Boards)]).
 
 
 get_dn(OltIp, Board) ->

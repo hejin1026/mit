@@ -150,7 +150,7 @@ load() ->
                   Dn = lists:concat(["onu=", to_list(Rdn),",", OltDn]),
                   mit:update(Entry#entry{dn = list_to_binary(Dn), parent = list_to_binary(OltDn)})
           end, Onus),
-          ?ERROR("finish start onu : ~p ~n", [length(Onus)]);
+          io:format("finish start onu : ~p ~n", [length(Onus)]);
         {error, Reason} ->
             ?ERROR("mit_onu start failure...~p",[Reason])
     end.
