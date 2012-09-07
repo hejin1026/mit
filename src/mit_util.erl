@@ -65,7 +65,7 @@ uid(splite, Id) ->
 uid(gem, Id) ->
     to_binary("gem:" ++ integer_to_list(Id));
 uid(vlan, Id) ->
-    to_binary("vlan:" ++ integer_to_list(Id)),
+    to_binary("vlan:" ++ integer_to_list(Id));
 uid(dslan, Id) ->
     to_binary("dslan:" ++ integer_to_list(Id)).
 
@@ -138,8 +138,6 @@ get_type(?ONU) -> onu;
 get_type(?EOC) -> eoc;
 get_type(?CPE) -> cpe;
 get_type(?DSLAN) -> dslan;
-
-
 
 
 format(Type, Attrs, Entry) ->
