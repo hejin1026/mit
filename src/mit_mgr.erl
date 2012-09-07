@@ -65,10 +65,12 @@ handle_cast(sync, State) ->
 
 handle_cast({sync_entry, Type}, State) ->
     case Type of
-        snmp_onu ->  sync(onu, mit_onu:snmp_all());
+        snmponu ->  sync(onu, mit_onu:snmp_all());
         onu ->  sync(onu, mit_onu:all());
         olt ->  sync(olt, mit_olt:all());
         port -> sync(port, mit_port:all_monet());
+        eoc -> sync(eoc, mit_eoc:all());
+        dslan -> sync(dslan, mit_dslan:all());
         _ ->    ignore
     end,
     {noreply, State};
@@ -80,6 +82,7 @@ handle_cast({sync_entry, Type, Id}, State) ->
         port -> sync(port, mit_port:one(Id));
         eoc -> sync(eoc, mit_eoc:one(Id));
         cpe -> sync(cpe, mit_cpe:one(Id));
+        dslan -> sync(dslan, mit_dslan:one(Id));
         _ ->    ignore
     end,
     {noreply, State};
