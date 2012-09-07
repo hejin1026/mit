@@ -82,7 +82,7 @@ get_notify_entry(Port) ->
             OltAttrs ++ [{dn, list_to_binary(Dn)}, {sub_entry, olt}, {device_type, get_device_type(Port)}|Port2];
         {ok, #entry{dn = DevDn, type = onu, data = Data}} ->
             {value, OnuState} = dataset:get_value(onu_state, Data),
-            {value, OnuNo} = dataset:get_value(onuno, Data),
+            {value, OnuNo} = dataset:get_value(onu_no, Data),
             Rdn = "port=" ++ to_list(PortIndex),
             Dn = Rdn ++ "," ++ binary_to_list(DevDn),
             OltIp = lists:last(string:tokens(binary_to_list(DevDn), "=")),
