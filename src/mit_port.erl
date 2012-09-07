@@ -129,7 +129,7 @@ load() ->
         mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,Id),
             type = port, parent = to_binary(OltDn), data = mit_util:format(mit, mem_attrs(), Port)})
     end, Ports),
-    io:format("finish start port ~p...",[length(Ports)]).
+    io:format("finish start port ~p...~n",[length(Ports)]).
 
 
 add(Dn, Port) ->
