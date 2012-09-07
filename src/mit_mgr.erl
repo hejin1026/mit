@@ -58,8 +58,7 @@ handle_call(Request, _From, State) ->
 
 handle_cast(sync, State) ->
     sync(olt, mit_olt:all()),
-    sync(onu, mit_onu:all()),
-%    sync(port, mit_port:all_monet()),
+    sync(onu, mit_onu:snmp_all()),
     {noreply, State};
 
 
