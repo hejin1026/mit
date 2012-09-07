@@ -137,7 +137,7 @@ get_type(?OLT) -> olt;
 get_type(?ONU) -> onu;
 get_type(?EOC) -> eoc;
 get_type(?CPE) -> cpe;
-get_type(?DSLAN) -> dslan;
+get_type(?DSLAN) -> dslan.
 
 
 format(Type, Attrs, Entry) ->
