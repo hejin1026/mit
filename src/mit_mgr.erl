@@ -69,7 +69,7 @@ handle_cast({sync_entry, Type}, State) ->
         olt ->  sync(olt, mit_olt:all());
         port -> sync(port, mit_port:all_monet());
         eoc -> sync(eoc, mit_eoc:all());
-        dslan -> sync(dslan, mit_dslan:all());
+        dslam -> sync(dslam, mit_dslam:all());
         _ ->    ignore
     end,
     {noreply, State};
@@ -81,7 +81,7 @@ handle_cast({sync_entry, Type, Id}, State) ->
         port -> sync(port, mit_port:one(Id));
         eoc -> sync(eoc, mit_eoc:one(Id));
         cpe -> sync(cpe, mit_cpe:one(Id));
-        dslan -> sync(dslan, mit_dslan:one(Id));
+        dslam -> sync(dslam, mit_dslam:one(Id));
         _ ->    ignore
     end,
     {noreply, State};

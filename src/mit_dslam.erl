@@ -1,4 +1,4 @@
--module(mit_dslan).
+-module(mit_dslam).
 
 -create("chibj 2012-9-7").
 
@@ -7,7 +7,7 @@
 
 -import(extbif, [to_binary/1, to_list/1]).
 
--mit_boot_load({dslan, load, "loading dslan", undefined}).
+-mit_boot_load({dslam, load, "loading dslam", undefined}).
 
 -export([all/0,
          one/1,
@@ -25,15 +25,15 @@
 -define(SERVER, ?MODULE).
 
 all() ->
-    Sql = "select  'snmp' means, 'dslan' device_type,t1.* from mit_dslans t1" ,
+    Sql = "select  'snmp' means, 'dslam' device_type,t1.* from mit_dslams t1" ,
     get_data(Sql).
 
 one(Id) ->
-    Sql = "select  'snmp' means, 'dslan' device_type, t1.* from mit_dslans t1 where  t1.id = " ++ to_list(Id),
+    Sql = "select  'snmp' means, 'dslam' device_type, t1.* from mit_dslams t1 where  t1.id = " ++ to_list(Id),
     get_data(Sql).
 
 redisco() ->
-    Sql = "select  'snmp' means, 'dslan' device_type, t1.* from mit_dslans t1 where  t1.discovery_state = 2",
+    Sql = "select  'snmp' means, 'dslam' device_type, t1.* from mit_dslams t1 where  t1.discovery_state = 2",
     get_data(Sql).
 
 get_data(Sql) ->
@@ -72,35 +72,35 @@ mem_attrs() ->
     ].
 
 
-get_entry(Dslan) ->
-    mit_util:format(mit, mem_attrs(), Dslan).
+get_entry(Dslam) ->
+    mit_util:format(mit, mem_attrs(), Dslam).
 
-get_notify_entry(Dslan) ->
-    {value, Ip} = dataset:get_value(ip, Dslan),
-	Dn = "dslan=" ++ to_list(Ip),
-    Attrs = mit_util:format(notify, attrs(), Dslan),
+get_notify_entry(Dslam) ->
+    {value, Ip} = dataset:get_value(ip, Dslam),
+	Dn = "dslam=" ++ to_list(Ip),
+    Attrs = mit_util:format(notify, attrs(), Dslam),
      [{dn, list_to_binary(Dn)}|Attrs].
 
 
 lookup(Dn) ->
     case mit:lookup(Dn) of
-    {ok, #entry{data = Dslan}} ->
-        {ok, Dslan};
+    {ok, #entry{data = Dslam}} ->
+        {ok, Dslam};
     false ->
         false
     end.
 
 load() ->
-    case emysql:select({mit_dslans, mem_attrs()}) of
-        {ok, Dslans} ->
-            lists:foreach(fun(Dslan) ->
-                {value, Id} = dataset:get_value(id, Dslan),
-                {value, Ip} = dataset:get_value(ip, Dslan),
-                Dn = "dslan=" ++ to_list(Ip),
-                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(dslan,Id),ip=Ip, type = dslan, parent = undefined, data = Dslan},
+    case emysql:select({mit_dslams, mem_attrs()}) of
+        {ok, Dslams} ->
+            lists:foreach(fun(Dslam) ->
+                {value, Id} = dataset:get_value(id, Dslam),
+                {value, Ip} = dataset:get_value(ip, Dslam),
+                Dn = "dslam=" ++ to_list(Ip),
+                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(dslam,Id),ip=Ip, type = dslam, parent = undefined, data = Dslam},
                 mit:update(Entry)
-            end, Dslans),
-            io:format("finish start dslan : ~p ~n", [length(Dslans)]),
+            end, Dslams),
+            io:format("finish start dslam : ~p ~n", [length(Dslams)]),
             {ok, state};
         {error, Reason} ->
             ?ERROR("start failure...~p",[Reason]),
@@ -108,50 +108,50 @@ load() ->
     end.
 
 add(Dn, Attrs) ->
-    Dslan = transform(Attrs),
+    Dslam = transform(Attrs),
     case mit:lookup(Dn) of
         {ok, #entry{data = Entry} = _} ->
-            update_dslan(Dn, Entry, Dslan);
+            update_dslam(Dn, Entry, Dslam);
         false ->
-            insert_dslan(Dn, Dslan)
+            insert_dslam(Dn, Dslam)
     end.
 
 update(Dn, Attrs) ->
     case mit:lookup(Dn) of
     {ok, #entry{data = Entry} = _} ->
-        update_dslan(Dn, Entry, Attrs);
+        update_dslam(Dn, Entry, Attrs);
     false ->
-        ?ERROR("cannot find dslan ~p", [Dn])
+        ?ERROR("cannot find dslam ~p", [Dn])
     end.
 
-insert_dslan(Dn, Dslan) ->
+insert_dslam(Dn, Dslam) ->
     CreatedAt = {datetime, calendar:local_time()},
-    case emysql:insert(mit_dslans, [{created_at, CreatedAt}|Dslan]) of
+    case emysql:insert(mit_dslams, [{created_at, CreatedAt}|Dslam]) of
     {updated, {1, Id}} ->
-        {value, Ip} = dataset:get_value(ip, Dslan),
-        mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(dslan, Id), ip=Ip, type = dslan, data = [{id, Id}|Dslan]});
+        {value, Ip} = dataset:get_value(ip, Dslam),
+        mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(dslam, Id), ip=Ip, type = dslam, data = [{id, Id}|Dslam]});
     {updated, {0, _}} ->
-        ?WARNING("cannot find inserted dslan: ~p ~p", [Dn, Dslan]);
+        ?WARNING("cannot find inserted dslam: ~p ~p", [Dn, Dslam]);
     {error, Reason} ->
         ?ERROR("dn :~p, Reason: ~p", [Dn, Reason]);
     _ ->
         ok
     end.
 
-update_dslan(Dn, OldAttrs, Attrs) ->
-     ?INFO("update dslan: ~p，~p", [Dn,Attrs]),
+update_dslam(Dn, OldAttrs, Attrs) ->
+     ?INFO("update dslam: ~p，~p", [Dn,Attrs]),
       case mit_util:merge(Attrs, OldAttrs) of
         {changed, MergedAttrs,_} ->
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
             {value, Ip} = dataset:get_value(ip, MergedAttrs),
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             Datetime = {datetime, calendar:local_time()},
-            case emysql:update(mit_dslans, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
+            case emysql:update(mit_dslams, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
             {updated, {1, _}} -> %update mit cache
-                mit:update(#entry{dn = to_binary(Dn), ip=Ip,type = dslan,uid=mit_util:uid(dslan, Id),
+                mit:update(#entry{dn = to_binary(Dn), ip=Ip,type = dslam,uid=mit_util:uid(dslam, Id),
                     parent = mit_util:bdn(Dn), data = MergedAttrs});
             {updated, {0, _Id}} ->
-                ?WARNING("stale Dslan: ~p", [Dn]);
+                ?WARNING("stale Dslam: ~p", [Dn]);
             {error, Reason} ->
                 ?ERROR("~p", [Reason])
             end;
@@ -168,7 +168,7 @@ transform([{vendor, Vendor}|T], Acc) ->
     transform(T, [{device_manu, ManuId}|Acc]);
 transform([{type, Type}|T], Acc) ->
 	TypeId = mit_dict:lookup(type, Type),
-	transform(T, [{device_kind, TypeId},{dslan_type,Type}|Acc]);
+	transform(T, [{device_kind, TypeId},{dslam_type,Type}|Acc]);
 transform([H|T], Acc) ->
     transform(T, [H | Acc]);
 

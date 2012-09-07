@@ -49,7 +49,7 @@ uid(3, Id) ->
 uid(4, Id) ->
     uid(cpe, Id);
 uid(5, Id) ->
-    uid(dslan, Id);
+    uid(dslam, Id);
 uid(eoc, Id) ->
     to_binary("eoc:" ++ integer_to_list(Id));
 uid(cpe, Id) ->
@@ -66,8 +66,8 @@ uid(gem, Id) ->
     to_binary("gem:" ++ integer_to_list(Id));
 uid(vlan, Id) ->
     to_binary("vlan:" ++ integer_to_list(Id));
-uid(dslan, Id) ->
-    to_binary("dslan:" ++ integer_to_list(Id)).
+uid(dslam, Id) ->
+    to_binary("dslam:" ++ integer_to_list(Id)).
 
 nid(undefined) ->
     undefined;
@@ -110,8 +110,8 @@ mit_entry(eoc, Eoc) ->
     mit_eoc:get_entry(Eoc);
 mit_entry(cpe, Cpe) ->
     mit_cpe:get_entry(Cpe);
-mit_entry(dslan, Dslan) ->
-    mit_dslan:get_entry(Dslan).
+mit_entry(dslam, Dslam) ->
+    mit_dslam:get_entry(Dslam).
 
 notify_entry(olt, Olt) ->
     mit_olt:get_notify_entry(Olt);
@@ -123,21 +123,21 @@ notify_entry(eoc, Eoc) ->
     mit_eoc:get_notify_entry(Eoc);
 notify_entry(cpe, Cpe) ->
     mit_cpe:get_notify_entry(Cpe);
-notify_entry(dslan, Dslan) ->
-    mit_dslan:get_notify_entry(Dslan).
+notify_entry(dslam, Dslam) ->
+    mit_dslam:get_notify_entry(Dslam).
 
 
 get_type(olt) -> ?OLT;
 get_type(onu) -> ?ONU;
 get_type(eoc) -> ?EOC;
 get_type(cpe) -> ?CPE;
-get_type(dslan) -> ?DSLAN;
+get_type(dslam) -> ?DSLAM;
 
 get_type(?OLT) -> olt;
 get_type(?ONU) -> onu;
 get_type(?EOC) -> eoc;
 get_type(?CPE) -> cpe;
-get_type(?DSLAN) -> dslan.
+get_type(?DSLAM) -> dslam.
 
 
 format(Type, Attrs, Entry) ->

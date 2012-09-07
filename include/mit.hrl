@@ -6,7 +6,7 @@
 
 -define(CPE, 4).
 
--define(DSLAN, 5).
+-define(DSLAM, 5).
 
 -define(MIT_ADD, 1).
 
