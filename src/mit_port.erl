@@ -145,7 +145,7 @@ update(Dn, Attrs) ->
         {ok, OldAttrs} ->
             update_port(Dn, OldAttrs, Attrs);
         false ->
-            ?ERROR("cannot find onu ~p", [Dn])
+            ?ERROR("cannot find entry ~p", [Dn])
     end.
 
 
@@ -162,12 +162,12 @@ update_ports(Dn, Ports) ->
 
 do_ports(Dn, Ports, Callback) ->
     case mit:lookup(Dn) of
-	        {ok, #entry{uid= Id, type = Type, data = Onu} = _} ->
+	        {ok, #entry{uid= Id, type = Type, data = Entry} = _} ->
 	    		{ok, PortInDb} = emysql:select({mit_ports, {'and',[{device_id, mit_util:nid(Id)},{device_type,mit_util:get_type(Type)}]}}),
                 List = [{to_binary(proplists:get_value(port_index, R)), R} || R <- Ports],
                 DbList = [{to_binary(proplists:get_value(port_index, R)), R} || R <- PortInDb],
                 {AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(List), mit_util:get_key(DbList)),
-                Callback({AddList, UpdateList},Type, Onu, DbList, List);
+                Callback({AddList, UpdateList},Type, Entry, DbList, List);
 		    false ->
 	        	?WARNING("cannot find entry: ~p", [Dn])
 	end.
