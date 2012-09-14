@@ -25,7 +25,7 @@
 -define(SERVER, ?MODULE).
 
 all() ->
-    Sql = "select  'snmp' means, 'dslam' device_type,t1.* from mit_dslams t1" ,
+    Sql = "select  'snmp' means, 'dslam' device_type,t1.* from mit_dslams t1 where t1.collect_status < 2" ,
     get_data(Sql).
 
 one(Id) ->
