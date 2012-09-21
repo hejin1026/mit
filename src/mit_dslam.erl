@@ -105,11 +105,11 @@ load() ->
     end.
 
 
-entry(Dsalm) ->
+entry(Dslam) ->
      {value, Id} = dataset:get_value(id, Dslam),
-        {value, Ip} = dataset:get_value(ip, Dslam),
-        Dn = "dslam=" ++ to_list(Ip),
-        #entry{dn = to_binary(Dn), uid = mit_util:uid(dslam,Id),ip=Ip, type = dslam, parent = undefined, data = Dslam}.
+     {value, Ip} = dataset:get_value(ip, Dslam),
+     Dn = "dslam=" ++ to_list(Ip),
+     #entry{dn = to_binary(Dn), uid = mit_util:uid(dslam,Id),ip=Ip, type = dslam, parent = undefined, data = Dslam}.
 
 
 add(Dn, Attrs) ->
