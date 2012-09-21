@@ -115,21 +115,21 @@ lookup(Dn) ->
     end.
 
 load() ->
-    ?ERROR("look mem port ...", []),
-    {ok, Ports} = emysql:sqlquery("select t.ip as olt_ip,p.*
+    ?ERROR("select mem port ...~n", []),
+    {ok, Ports} = emysql:sqlquery("select t.ip as olt_ip,p.*,concat('olt=',t.ip) oltdn,concat('port=',p.port_index,',olt=',t.ip) dn
         from mit_ports p LEFT join mit_olts t on t.id = p.device_id  where p.device_type = 1"),
-    ?ERROR("start mem port ...", []),
-    lists:foreach(fun(Port) ->
-        {value, OltIp} = dataset:get_value(olt_ip, Port),
-        OltDn = lists:concat(["olt=", to_list(OltIp)]),
-        {value, Id} = dataset:get_value(id, Port),
-        {value, PortIndex} = dataset:get_value(port_index, Port),
-        Rdn = "port=" ++ to_list(PortIndex),
-        Dn = Rdn ++ "," ++ OltDn,
-        mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,Id),
-            type = port, parent = to_binary(OltDn), data = mit_util:format(mit, mem_attrs(), Port)})
-    end, Ports),
+    ?ERROR("start mem port ...~n", []),
+    Store = fun(Port) -> mnesia:write(entry(Port)) end,
+    mnesia:sync_dirty(fun lists:foreach/2, [Store, Ports]),
     io:format("finish start port ~p...~n",[length(Ports)]).
+
+entry(Port) ->
+       {value, OltDn} = dataset:get_value(oltdn, Port),
+        {value, Id} = dataset:get_value(id, Port),
+        {value, Dn} = dataset:get_value(dn, Port),
+        #entry{dn = to_binary(Dn), uid = mit_util:uid(port,Id),
+        type = port, parent = to_binary(OltDn), data = mit_util:format(mit, mem_attrs(), Port)}.
+
 
 
 add(Dn, Port) ->

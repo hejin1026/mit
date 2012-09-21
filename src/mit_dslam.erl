@@ -91,21 +91,26 @@ lookup(Dn) ->
     end.
 
 load() ->
+    ?ERROR("select  dslam ...~n", []),
     case emysql:select({mit_dslams, mem_attrs()}) of
         {ok, Dslams} ->
-            lists:foreach(fun(Dslam) ->
-                {value, Id} = dataset:get_value(id, Dslam),
-                {value, Ip} = dataset:get_value(ip, Dslam),
-                Dn = "dslam=" ++ to_list(Ip),
-                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(dslam,Id),ip=Ip, type = dslam, parent = undefined, data = Dslam},
-                mit:update(Entry)
-            end, Dslams),
+            ?ERROR("start mem dslam ~n", []),
+            Store = fun(Dslam) -> mnesia:write(entry(Dslam)) end,
+            mnesia:sync_dirty(fun lists:foreach/2, [Store, Dslams]),
             io:format("finish start dslam : ~p ~n", [length(Dslams)]),
             {ok, state};
         {error, Reason} ->
-            ?ERROR("start failure...~p",[Reason]),
+            ?ERROR("start failure...~p ~n",[Reason]),
             {stop, Reason}
     end.
+
+
+entry(Dsalm) ->
+     {value, Id} = dataset:get_value(id, Dslam),
+        {value, Ip} = dataset:get_value(ip, Dslam),
+        Dn = "dslam=" ++ to_list(Ip),
+        #entry{dn = to_binary(Dn), uid = mit_util:uid(dslam,Id),ip=Ip, type = dslam, parent = undefined, data = Dslam}.
+
 
 add(Dn, Attrs) ->
     Dslam = transform(Attrs),

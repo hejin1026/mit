@@ -133,27 +133,27 @@ lookup(Dn) ->
     end.
 
 load() ->
-    case emysql:sqlquery("select t.ip as olt_ip,o.* from mit_onus o LEFT join mit_olts t on t.id = o.olt_id ") of
+    ?ERROR("select  onu ...~n", []),
+    case emysql:sqlquery("select t.ip as olt_ip,o.*,concat('olt=',t.ip) oltdn,concat('onu=',o.rdn,',olt=',t.ip) dn from mit_onus o LEFT join mit_olts t on t.id = o.olt_id ") of
         {ok, Onus} ->
             ?ERROR("start mem onu ~n", []),
-            lists:foreach(fun(Onu) ->
-                  {value, Id} = dataset:get_value(id, Onu),
-                  {value, OltIp} = dataset:get_value(olt_ip, Onu),
-                  Entry = case dataset:get_value(ip, Onu) of
-                      {value, Ip} ->
-                          #entry{uid = mit_util:uid(onu,Id), ip=Ip, type = onu, data = get_entry(Onu)};
-                      {false, _} ->
-                          #entry{uid = mit_util:uid(onu,Id), type = onu, data = get_entry(Onu)}
-                   end,
-                  {value, Rdn} = dataset:get_value(rdn, Onu),
-                  OltDn = lists:concat(["olt=", to_list(OltIp)]),
-                  Dn = lists:concat(["onu=", to_list(Rdn),",", OltDn]),
-                  mit:update(Entry#entry{dn = list_to_binary(Dn), parent = list_to_binary(OltDn)})
-          end, Onus),
-          io:format("finish start onu : ~p ~n", [length(Onus)]);
+            Store = fun(Onu) -> mnesia:write(entry(Onu)) end,
+            mnesia:sync_dirty(fun lists:foreach/2, [Store, Onus]),
+            io:format("finish start onu : ~p ~n", [length(Onus)]);
         {error, Reason} ->
-            ?ERROR("mit_onu start failure...~p",[Reason])
+            ?ERROR("mit_onu start failure...~p ~n",[Reason])
     end.
+
+entry(Onu) ->
+      {value, Id} = dataset:get_value(id, Onu),
+      {value, OltDn} = dataset:get_value(oltdn, Onu),
+      {value, Dn} = dataset:get_value(dn, Onu),
+      case dataset:get_value(ip, Onu) of
+          {value, Ip} ->
+              #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=Ip, type = onu, data = get_entry(Onu)};
+          {false, _} ->
+              #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), type = onu, data = get_entry(Onu)}
+       end.
 
 get_dn(OltIp, Onu) ->
       {value, Rdn} = dataset:get_value(rdn, Onu),

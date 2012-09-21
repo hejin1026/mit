@@ -95,21 +95,24 @@ lookup(Dn) ->
     end.
 
 load() ->
+    ?ERROR("select  olt ...~n", []),
     case emysql:select({mit_olts, mem_attrs()}) of
         {ok, Olts} ->
-            lists:foreach(fun(Olt) ->
-                {value, Id} = dataset:get_value(id, Olt),
-                {value, Ip} = dataset:get_value(ip, Olt),
-                Dn = "olt=" ++ to_list(Ip),
-                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(olt,Id),ip=Ip, type = olt, parent = undefined, data = Olt},
-                mit:update(Entry)
-            end, Olts),
+            ?ERROR("start mem olt ~n", []),
+            Store = fun(Olt) -> mnesia:write(entry(Olt)) end,
+            mnesia:sync_dirty(fun lists:foreach/2, [Store, Olts]),
             io:format("finish start olt : ~p ~n", [length(Olts)]),
             {ok, state};
         {error, Reason} ->
             ?ERROR("start failure...~p",[Reason]),
             {stop, Reason}
     end.
+
+entry(Olt) ->
+     {value, Id} = dataset:get_value(id, Olt),
+        {value, Ip} = dataset:get_value(ip, Olt),
+        Dn = "olt=" ++ to_list(Ip),
+        #entry{dn = to_binary(Dn), uid = mit_util:uid(olt,Id),ip=Ip, type = olt, parent = undefined, data = Olt}.
 
 add(Dn, Attrs) ->
     Olt = transform(Attrs),

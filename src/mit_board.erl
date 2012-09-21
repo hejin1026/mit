@@ -43,19 +43,22 @@ lookup(Dn) ->
     end.
 
 load() ->
-    {ok, Boards} = emysql:sqlquery("select t.ip,o.* from mit_boards o LEFT join mit_olts t on t.id = o.device_id
+    ?ERROR("select  board ...~n", []),
+    {ok, Boards} = emysql:sqlquery("select t.ip,o.* ,concat('olt=',t.ip) oltdn,concat('slot=',o.boardid,',olt=',t.ip) dn from mit_boards o LEFT join mit_olts t on t.id = o.device_id
         where o.device_type = 1"),
-    ?ERROR("start mem board ...", []),
-    lists:foreach(fun(Board) ->
-        {value, Id} = dataset:get_value(id, Board),
-        Buid = "slot:" ++ integer_to_list(Id),
-        {value, OltIp} = dataset:get_value(ip, Board),
-        OltDn = lists:concat(["olt=", to_list(OltIp)]),
-        Dn = get_dn(OltIp, Board),
-        mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = to_binary(OltDn),
-            type = board, data = mit_util:format(mit, attrs(), Board)})
-    end, Boards),
+    ?ERROR("start mem board ...~n", []),
+    Store = fun(Board) -> mnesia:write(entry(Board)) end,
+    mnesia:sync_dirty(fun lists:foreach/2, [Store, Boards]),
     io:format("finish start board : ~p ~n", [length(Boards)]).
+
+entry(Board) ->
+    {value, Id} = dataset:get_value(id, Board),
+    Buid = "slot:" ++ integer_to_list(Id),
+    {value, OltDn} = dataset:get_value(oltdn, Board),
+    {value, Dn} = dataset:get_value(dn, Board),
+    #entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = to_binary(OltDn),
+        type = board, data = mit_util:format(mit, attrs(), Board)}.
+
 
 
 get_dn(OltIp, Board) ->
