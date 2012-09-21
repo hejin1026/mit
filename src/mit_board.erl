@@ -49,7 +49,7 @@ load() ->
     ?ERROR("start mem board ...~n", []),
     Store = fun(Board) -> mnesia:write(entry(Board)) end,
     mnesia:sync_dirty(fun lists:foreach/2, [Store, Boards]),
-    io:format("finish start board : ~p ~n", [length(Boards)]).
+    ?ERROR("finish start board : ~p ~n", [length(Boards)]).
 
 entry(Board) ->
     {value, Id} = dataset:get_value(id, Board),

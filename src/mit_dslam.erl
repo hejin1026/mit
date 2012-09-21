@@ -97,7 +97,7 @@ load() ->
             ?ERROR("start mem dslam ~n", []),
             Store = fun(Dslam) -> mnesia:write(entry(Dslam)) end,
             mnesia:sync_dirty(fun lists:foreach/2, [Store, Dslams]),
-            io:format("finish start dslam : ~p ~n", [length(Dslams)]),
+            ?ERROR("finish start dslam : ~p ~n", [length(Dslams)]),
             {ok, state};
         {error, Reason} ->
             ?ERROR("start failure...~p ~n",[Reason]),

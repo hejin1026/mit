@@ -101,7 +101,7 @@ load() ->
             ?ERROR("start mem olt ~n", []),
             Store = fun(Olt) -> mnesia:write(entry(Olt)) end,
             mnesia:sync_dirty(fun lists:foreach/2, [Store, Olts]),
-            io:format("finish start olt : ~p ~n", [length(Olts)]),
+            ?ERROR("finish start olt : ~p ~n", [length(Olts)]),
             {ok, state};
         {error, Reason} ->
             ?ERROR("start failure...~p",[Reason]),

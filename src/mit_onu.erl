@@ -139,7 +139,7 @@ load() ->
             ?ERROR("start mem onu ~n", []),
             Store = fun(Onu) -> mnesia:write(entry(Onu)) end,
             mnesia:sync_dirty(fun lists:foreach/2, [Store, Onus]),
-            io:format("finish start onu : ~p ~n", [length(Onus)]);
+            ?ERROR("finish start onu : ~p ~n", [length(Onus)]);
         {error, Reason} ->
             ?ERROR("mit_onu start failure...~p ~n",[Reason])
     end.

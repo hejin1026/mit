@@ -126,6 +126,7 @@ delete(dn, Dn) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
+    ?ERROR("starting  mit...~n",[]),
     case mnesia:system_info(extra_db_nodes) of
         [] -> %master node
             emysql:delete(mit_devices_changed),
