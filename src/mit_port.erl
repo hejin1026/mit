@@ -121,7 +121,7 @@ load() ->
     ?ERROR("start mem port ...~n", []),
     Store = fun(Port) -> mnesia:write(entry(Port)) end,
     mnesia:sync_dirty(fun lists:foreach/2, [Store, Ports]),
-    io:format("finish start port ~p...~n",[length(Ports)]).
+    io:format("finish start port : ~p ~n",[length(Ports)]).
 
 entry(Port) ->
        {value, OltDn} = dataset:get_value(oltdn, Port),
