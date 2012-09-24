@@ -119,11 +119,8 @@ load() ->
     {ok, Ports} = emysql:sqlquery("select t.ip as olt_ip,p.*,concat('olt=',t.ip) oltdn,concat('port=',p.port_index,',olt=',t.ip) dn
         from mit_ports p LEFT join mit_olts t on t.id = p.device_id  where p.device_type = 1"),
     ?ERROR("start mem port ...~n", []),
-    % Store = fun(Port) -> mnesia:write(entry(Port)) end,
-    %  mnesia:sync_dirty(fun lists:foreach/2, [Store, Ports]),
-    Entries =  [entry(Port) || Port <- Ports ],
-    ?ERROR("Entries port : ~p ~n",[Entries]),
-    mnesia:write(Entries),
+    Store = fun(Port) -> mnesia:write(entry(Port)) end,
+    mnesia:sync_dirty(fun lists:foreach/2, [Store, Ports]),
     ?ERROR("finish start port : ~p ~n",[length(Ports)]).
 
 entry(Port) ->
