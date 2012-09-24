@@ -56,7 +56,7 @@ entry(Board) ->
     Buid = "slot:" ++ integer_to_list(Id),
     {value, OltDn} = dataset:get_value(oltdn, Board),
     {value, Dn} = dataset:get_value(dn, Board),
-    #entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = to_binary(OltDn),
+    #entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = to_binary(OltDn),ip = to_binary(Buid),
         type = board, data = mit_util:format(mit, attrs(), Board)}.
 
 

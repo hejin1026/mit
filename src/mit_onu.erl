@@ -148,11 +148,12 @@ entry(Onu) ->
       {value, Id} = dataset:get_value(id, Onu),
       {value, OltDn} = dataset:get_value(oltdn, Onu),
       {value, Dn} = dataset:get_value(dn, Onu),
-      case dataset:get_value(ip, Onu) of
-          {value, Ip} ->
+      {value, Ip} = dataset:get_value(ip, Onu)
+      case dataset:get_value(colletc_type, Onu) of
+          {value, 2} ->
               #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=Ip, type = onu, data = get_entry(Onu)};
-          {false, _} ->
-              #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), type = onu, data = get_entry(Onu)}
+          _ ->
+              #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=mit_util:uid(onu,Id),type = onu, data = get_entry(Onu)}
        end.
 
 get_dn(OltIp, Onu) ->

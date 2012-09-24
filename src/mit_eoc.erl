@@ -104,7 +104,7 @@ load() ->
                {value, Id} = dataset:get_value(id, Eoc),
                 {value, Ip} = dataset:get_value(ip, Eoc),
                 Dn = "eoc=" ++ to_list(Ip),
-                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(eoc,Id), type = eoc, data = Eoc},
+                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(eoc,Id), ip= Ip,type = eoc, data = Eoc},
                 mit:update(Entry)
             end, Eocs),
             io:format("finish start eocs header : ~p ~n", [length(Eocs)]),
