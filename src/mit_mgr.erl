@@ -117,6 +117,20 @@ do_sync_entry(port, Record) ->
     ?INFO("sync port ~p", [Dn]),
     master_dist:monitor(Dn, Entry);
 
+do_sync_entry(onu, Record) ->
+    {value, Id} = dataset:get_value(id, Record),
+    Entry = mit_util:notify_entry(onu, Record),
+    {value, Dn} = dataset:get_value(dn, Entry),
+    {value, Ip} =  case dataset:get_value(colletc_type, Record) of
+                    {value, 2} -> dataset:get_value(ip, Record, undefined_in_sync);
+                            _  -> {value,mit_util:uid(onu, Id)}
+                   end,
+      mit:update(#entry{dn = Dn, uid = mit_util:uid(onu, Id), ip= Ip, parent = mit_util:bdn(Dn),
+                        type = onu, data = mit_util:mit_entry(onu, Record)}),
+    ?INFO("sync event ~p", [Dn]),
+    mit_event:notify({present, Dn, Entry});
+
+
 do_sync_entry(Type, Record) ->
     {value, Id} = dataset:get_value(id, Record),
     {value, Ip} = dataset:get_value(ip, Record, undefined_in_sync),
