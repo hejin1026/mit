@@ -4,7 +4,7 @@
 
 -behavior(application).
 
--export([start/0,start/2,stop/1]).
+-export([start/0,start/2,stop/1,stop/0]).
 
 start() ->
     application:start(crypto),
