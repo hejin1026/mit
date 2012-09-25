@@ -164,13 +164,15 @@ get_dn2(OltDn, Rdn) ->
       list_to_binary(lists:concat(["onu=", to_list(Rdn),",", to_list(OltDn)])).
 
 add(Dn, Onu0) ->
+    Now = calendar:local_time(),
     Onu = transform(Onu0),
     case lookup(Dn) of
         {ok, OldOnu} ->
             update_onu(Dn, OldOnu, Onu);
         false ->
             insert_onu(to_binary(Dn), Onu)
-    end.
+    end,
+    ?ERROR("ad onu times ~p ~n,~p", [Now,calendar:local_time()]).
 
 update(Dn, Attrs) ->
     case lookup(Dn) of
@@ -226,7 +228,10 @@ insert_onu(Olt, Onu) when is_list(Olt) ->
     case emysql:insert(mit_onus, [{olt_id, OltId},{cityid, CityId},{name,DeviceName},{created_at, Now}|Onu]) of
         {updated, {1, Id}} ->
        %     ?INFO("insert onu dn:~p,result: ~p", [Dn, Onu]),
-            {value, Ip} = dataset:get_value(ip, Onu, undefined),
+            {value, Ip} =  case dataset:get_value(colletc_type, Onu) of
+                            {value, 2} -> dataset:get_value(ip, Onu, undefined);
+                                    _  -> {value,mit_util:uid(onu, Id)}
+                           end,
             Dn = get_dn(OltIp, Onu),
             mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id),ip=Ip,type = onu,
                 parent = mit_util:bdn(Dn),data = [{id, Id},{olt_id, OltId},{cityid, CityId},{created_at, Now}|Onu]});
@@ -251,8 +256,11 @@ update_onu(Dn, OldAttrs, NewAttrs) ->
             case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs]) of
                 {updated, {1, _}} -> %update mit cache
 					{value, Id} = dataset:get_value(id, OldAttrs),
-                    {value, Ip} = dataset:get_value(ip, MergedAttrs, undefined),
-                    mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id), ip = Ip,
+                    {value, Ip} =  case dataset:get_value(colletc_type, MergedAttrs) of
+                                    {value, 2} -> dataset:get_value(ip, MergedAttrs, undefined);
+                                            _  -> {value,mit_util:uid(onu, Id)}
+                                   end,
+                     mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id), ip = Ip,
                         type = onu, parent = mit_util:bdn(Dn), data = MergedAttrs});
                 {updated, {0, Id}} -> %stale onu?
                     ?WARNING("stale onu: ~p,~p", [Dn, Id]);
