@@ -1,4 +1,4 @@
--module(evabus_ctl).
+-module(mit_ctl).
 
 -created("chibj 2012-9-25").
 
