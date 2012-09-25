@@ -55,6 +55,11 @@ process(["status"]) ->
     end,
     ?STATUS_SUCCESS;
 
+process(["status", "worker_pool"]) ->
+    Status = worker_pool:status(),
+    ?PRINT("worker_pool status :~p", [Status]),
+    ?STATUS_SUCCESS;
+
 process(["stop"]) ->
 	mit_app:stop(),
     init:stop(),
