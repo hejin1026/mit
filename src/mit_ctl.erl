@@ -57,7 +57,7 @@ process(["status"]) ->
 
 process(["status", "worker_pool"]) ->
     Status = worker_pool:status(),
-    io:format("worker_pool status :~p", [Status]),
+    io:format("worker_pool status :~p~n", [Status]),
     ?STATUS_SUCCESS;
 
 process(["stop"]) ->
