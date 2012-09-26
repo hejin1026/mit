@@ -156,7 +156,7 @@ add_ports(Dn, Ports) ->
     end).
 
 update_ports(Dn, Ports) ->
-    do_ports(Dn, Ports, fun({_AddList, UpdateList},_Onu, DbList, List) ->
+    do_ports(Dn, Ports, fun({_AddList, UpdateList},_Type,_Onu, DbList, List) ->
         [update_port(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList]
     end).
 
