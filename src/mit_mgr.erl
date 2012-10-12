@@ -121,7 +121,7 @@ do_sync_entry(onu, Record) ->
     {value, Id} = dataset:get_value(id, Record),
     Entry = mit_util:notify_entry(onu, Record),
     {value, Dn} = dataset:get_value(dn, Entry),
-    {value, Ip} =  case dataset:get_value(colletc_type, Record) of
+    {value, Ip} =  case dataset:get_value(collect_type, Record) of
                     {value, 2} -> dataset:get_value(ip, Record, undefined_in_sync);
                             _  -> {value,mit_util:uid(onu, Id)}
                    end,
