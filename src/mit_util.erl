@@ -68,7 +68,7 @@ uid(vlan, Id) ->
 nid(undefined) ->
     undefined;
 nid(Uid) ->
-    [_Type,Id] = string:tokens(binary_to_list(Uid), ":"),
+    [_Type,Id] = string:tokens(to_list(Uid), ":"),
     list_to_integer(Id).
 
 merge(NewAttrs, OldAttrs) ->
