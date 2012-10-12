@@ -43,19 +43,22 @@ lookup(Dn) ->
     end.
 
 load() ->
-    {ok, Boards} = emysql:sqlquery("select t.ip,o.* from mit_boards o LEFT join mit_olts t on t.id = o.device_id
+    ?ERROR("select  board ...~n", []),
+    {ok, Boards} = emysql:sqlquery("select t.ip,o.* ,concat('olt=',t.ip) oltdn,concat('slot=',o.boardid,',olt=',t.ip) dn from mit_boards o LEFT join mit_olts t on t.id = o.device_id
         where o.device_type = 1"),
-    ?ERROR("start mem board ...", []),
-    lists:foreach(fun(Board) ->
-        {value, Id} = dataset:get_value(id, Board),
-        Buid = "slot:" ++ integer_to_list(Id),
-        {value, OltIp} = dataset:get_value(ip, Board),
-        OltDn = lists:concat(["olt=", to_list(OltIp)]),
-        Dn = get_dn(OltIp, Board),
-        mit:update(#entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = to_binary(OltDn),
-            type = board, data = mit_util:format(mit, attrs(), Board)})
-    end, Boards),
+    ?ERROR("start mem board ...~n", []),
+    Store = fun(Board) -> mnesia:write(entry(Board)) end,
+    mnesia:sync_dirty(fun lists:foreach/2, [Store, Boards]),
     ?ERROR("finish start board : ~p ~n", [length(Boards)]).
+
+entry(Board) ->
+    {value, Id} = dataset:get_value(id, Board),
+    Buid = "slot:" ++ integer_to_list(Id),
+    {value, OltDn} = dataset:get_value(oltdn, Board),
+    {value, Dn} = dataset:get_value(dn, Board),
+    #entry{dn = to_binary(Dn), uid = to_binary(Buid),parent = to_binary(OltDn),ip = to_binary(Buid),
+        type = board, data = mit_util:format(mit, attrs(), Board)}.
+
 
 
 get_dn(OltIp, Board) ->
@@ -89,7 +92,7 @@ add_boards(Dn, Boards) ->
 
 update_boards(Dn, Boards) ->
     case mit:lookup(Dn) of
-        {ok, #entry{uid = Id, type = Type, data = Entry}} ->
+        {ok, #entry{uid = Id, type = Type, data = _Entry}} ->
             {ok, BoardInDb} = emysql:select(mit_boards,
                 ({'and', {device_id, mit_util:nid(Id)}, {device_type, mit_util:get_type(Type)}})),
             List = [{to_binary(proplists:get_value(boardid, Data)), Data} || Data <- Boards],
@@ -115,7 +118,7 @@ insert_board(Dn, Board) ->
         InsertMem = fun(Id, BoardInfo) ->
              Uid = "slot:" ++ integer_to_list(Id),
              {value, OltIp} = dataset:get_value(ip, Entry),
-             mit:update(#entry{dn = get_dn(OltIp, BoardInfo), uid = Uid, type = board, parent = mit_util:bdn(Dn), data = [{id, Id}|BoardInfo]})
+             mit:update(#entry{dn = get_dn(OltIp, BoardInfo), uid = Uid,ip = Uid, type = board, parent = mit_util:bdn(Dn), data = [{id, Id}|BoardInfo]})
          end,
         do_insert(Type, Entry, Board, InsertMem);
     false ->
@@ -152,7 +155,7 @@ get_device_info(Type, Entry) ->
 update_board(Dn, OldAttrs, Attrs) ->
     UpdateMem = fun(Id, BoardInfo) ->
          Uid = "slot:" ++ integer_to_list(Id),
-         mit:update(#entry{dn = Dn, uid = Uid, type = board, parent = mit_util:bdn(Dn), data = BoardInfo})
+         mit:update(#entry{dn = Dn, uid = Uid, ip = Uid,type = board, parent = mit_util:bdn(Dn), data = BoardInfo})
      end,
     mit_util:do_update(mit_boards, Attrs, OldAttrs, UpdateMem).
 

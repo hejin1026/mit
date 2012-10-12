@@ -84,6 +84,12 @@ handle_data({entry, olt, Dn, Attrs}) ->
         catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Dn, Attrs])
         end
        end);
+   handle_data({entry, dslam, Dn, Attrs}) ->
+       do(fun()->
+           try mit_dslam:add(Dn, Attrs)
+           catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Dn, Attrs])
+           end
+          end);
 handle_data({entry, onu, Dn, Attrs})->
     do(fun()->
         try mit_onu:add(Dn, Attrs)

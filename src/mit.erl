@@ -97,9 +97,13 @@ update(AtomType, Dn, Id, Ip, Data) ->
         type = AtomType, data = mit_util:mit_entry(AtomType, Data)}).
 
 update(Entry) when is_record(Entry, entry) ->
-    mnesia:sync_dirty(fun() ->
+  Reason =  mnesia:sync_dirty(fun() ->
         mnesia:write(Entry)
-    end).
+    end),
+    case Reason of
+        ok -> ok;
+        _ -> ?ERROR("Reason~p",[Reason])
+        end.
 
 delete(id, Uid) ->
     Entries = mnesia:dirty_index_read(entry, Uid, #entry.uid),
@@ -122,6 +126,7 @@ delete(dn, Dn) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
+    ?ERROR("starting  mit...~n",[]),
     case mnesia:system_info(extra_db_nodes) of
         [] -> %master node
             emysql:delete(mit_devices_changed),

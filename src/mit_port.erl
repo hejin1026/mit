@@ -82,7 +82,7 @@ get_notify_entry(Port) ->
             OltAttrs ++ [{dn, list_to_binary(Dn)}, {sub_entry, olt}, {device_type, get_device_type(Port)}|Port2];
         {ok, #entry{dn = DevDn, type = onu, data = Data}} ->
             {value, OnuState} = dataset:get_value(onu_state, Data),
-            {value, OnuNo} = dataset:get_value(onuno, Data),
+            {value, OnuNo} = dataset:get_value(onu_no, Data),
             Rdn = "port=" ++ to_list(PortIndex),
             Dn = Rdn ++ "," ++ binary_to_list(DevDn),
             OltIp = lists:last(string:tokens(binary_to_list(DevDn), "=")),
@@ -115,21 +115,21 @@ lookup(Dn) ->
     end.
 
 load() ->
-    ?ERROR("look mem port ...", []),
-    {ok, Ports} = emysql:sqlquery("select t.ip as olt_ip,p.*
+    ?ERROR("select mem port ...~n", []),
+    {ok, Ports} = emysql:sqlquery("select t.ip as olt_ip,p.*,concat('olt=',t.ip) oltdn,concat('port=',p.port_index,',olt=',t.ip) dn
         from mit_ports p LEFT join mit_olts t on t.id = p.device_id  where p.device_type = 1"),
-    ?ERROR("start mem port ...", []),
-    lists:foreach(fun(Port) ->
-        {value, OltIp} = dataset:get_value(olt_ip, Port),
-        OltDn = lists:concat(["olt=", to_list(OltIp)]),
+    ?ERROR("start mem port ...~n", []),
+    Store = fun(Port) -> mnesia:write(entry(Port)) end,
+    mnesia:sync_dirty(fun lists:foreach/2, [Store, Ports]),
+    ?ERROR("finish start port : ~p ~n",[length(Ports)]).
+
+entry(Port) ->
+       {value, OltDn} = dataset:get_value(oltdn, Port),
         {value, Id} = dataset:get_value(id, Port),
-        {value, PortIndex} = dataset:get_value(port_index, Port),
-        Rdn = "port=" ++ to_list(PortIndex),
-        Dn = Rdn ++ "," ++ OltDn,
-        mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(port,Id),
-            type = port, parent = to_binary(OltDn), data = mit_util:format(mit, mem_attrs(), Port)})
-    end, Ports),
-    ?ERROR("finish mem port...",[]).
+        {value, Dn} = dataset:get_value(dn, Port),
+        #entry{dn = to_binary(Dn), uid = mit_util:uid(port,Id),ip = mit_util:uid(port,Id),
+        type = port, parent = to_binary(OltDn), data = mit_util:format(mit, mem_attrs(), Port)}.
+
 
 
 add(Dn, Port) ->
@@ -145,29 +145,29 @@ update(Dn, Attrs) ->
         {ok, OldAttrs} ->
             update_port(Dn, OldAttrs, Attrs);
         false ->
-            ?ERROR("cannot find onu ~p", [Dn])
+            ?ERROR("cannot find entry ~p", [Dn])
     end.
 
 
 add_ports(Dn, Ports) ->
-    do_ports(Dn, Ports, fun({AddList, UpdateList}, Onu, DbList, List) ->
-        [insert_port(onu, Onu, proplists:get_value(Rdn, List)) || Rdn <- AddList],
+    do_ports(Dn, Ports, fun({AddList, UpdateList}, Type,Entry, DbList, List) ->
+        [insert_port(Type, Entry, proplists:get_value(Rdn, List)) || Rdn <- AddList],
         [update_port(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList]
     end).
 
 update_ports(Dn, Ports) ->
-    do_ports(Dn, Ports, fun({_AddList, UpdateList},_Onu, DbList, List) ->
+    do_ports(Dn, Ports, fun({_AddList, UpdateList},_Type,_Onu, DbList, List) ->
         [update_port(proplists:get_value(Rdn, DbList), proplists:get_value(Rdn, List)) || Rdn <- UpdateList]
     end).
 
 do_ports(Dn, Ports, Callback) ->
     case mit:lookup(Dn) of
-	        {ok, #entry{uid= Id, type = onu, data = Onu} = _} ->
-	    		{ok, PortInDb} = emysql:select({mit_ports, {'and',[{device_id, mit_util:nid(Id)},{device_type,2}]}}),
+	        {ok, #entry{uid= Id, type = Type, data = Entry} = _} ->
+	    		{ok, PortInDb} = emysql:select({mit_ports, {'and',[{device_id, mit_util:nid(Id)},{device_type,mit_util:get_type(Type)}]}}),
                 List = [{to_binary(proplists:get_value(port_index, R)), R} || R <- Ports],
                 DbList = [{to_binary(proplists:get_value(port_index, R)), R} || R <- PortInDb],
                 {AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(List), mit_util:get_key(DbList)),
-                Callback({AddList, UpdateList}, Onu, DbList, List);
+                Callback({AddList, UpdateList},Type, Entry, DbList, List);
 		    false ->
 	        	?WARNING("cannot find entry: ~p", [Dn])
 	end.
@@ -177,7 +177,7 @@ insert_port(Dn, Port) ->
     case mit:lookup(Bdn) of
         {ok, #entry{type = Type, data = Entry} = _} ->
             InsertMem = fun(Id, PortInfo) ->
-                 mit:update(#entry{dn = Dn, uid = mit_util:uid(port,Id), type = port,
+                 mit:update(#entry{dn = Dn, uid = mit_util:uid(port,Id),ip = mit_util:uid(port,Id), type = port,
                      parent = mit_util:bdn(Dn), data = PortInfo}),
                  add_splite(Dn,[{id, Id}|PortInfo]) %每加入一个PON口，同时生成一个一级分光器，直接挂在pon下
              end,
@@ -186,8 +186,8 @@ insert_port(Dn, Port) ->
             ?WARNING("cannot find entry: ~p", [Bdn])
     end.
 
-insert_port(Type, Onu, Port) ->
-    do_insert(Type, Onu, Port, ingore).
+insert_port(Type, Entry, Port) ->
+    do_insert(Type, Entry, Port, ingore).
 
 do_insert(Type, Entry, Port, Callback) ->
     % ?INFO("info: insert port dn: ~p, entry: ~p", [Dn, Entry]),
@@ -216,7 +216,7 @@ get_device_info(Type, Entry) ->
 
 update_port(Dn, OldAttrs, Attrs) ->
     UpdateMem = fun(Id, PortInfo) ->
-         mit:update(#entry{dn = Dn, uid = mit_util:uid(port,Id), type = port, parent = mit_util:bdn(Dn), data = PortInfo})
+         mit:update(#entry{dn = Dn, uid = mit_util:uid(port,Id), ip = mit_util:uid(port,Id),type = port, parent = mit_util:bdn(Dn), data = PortInfo})
      end,
     mit_util:do_update(mit_ports, Attrs, OldAttrs, UpdateMem).
 

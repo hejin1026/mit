@@ -48,6 +48,8 @@ uid(3, Id) ->
     uid(eoc, Id);
 uid(4, Id) ->
     uid(cpe, Id);
+uid(5, Id) ->
+    uid(dslam, Id);
 uid(eoc, Id) ->
     to_binary("eoc:" ++ integer_to_list(Id));
 uid(cpe, Id) ->
@@ -63,7 +65,9 @@ uid(splite, Id) ->
 uid(gem, Id) ->
     to_binary("gem:" ++ integer_to_list(Id));
 uid(vlan, Id) ->
-    to_binary("vlan:" ++ integer_to_list(Id)).
+    to_binary("vlan:" ++ integer_to_list(Id));
+uid(dslam, Id) ->
+    to_binary("dslam:" ++ integer_to_list(Id)).
 
 nid(undefined) ->
     undefined;
@@ -105,7 +109,9 @@ mit_entry(onu, Onu) ->
 mit_entry(eoc, Eoc) ->
     mit_eoc:get_entry(Eoc);
 mit_entry(cpe, Cpe) ->
-    mit_cpe:get_entry(Cpe).
+    mit_cpe:get_entry(Cpe);
+mit_entry(dslam, Dslam) ->
+    mit_dslam:get_entry(Dslam).
 
 notify_entry(olt, Olt) ->
     mit_olt:get_notify_entry(Olt);
@@ -116,19 +122,22 @@ notify_entry(onu, Onu) ->
 notify_entry(eoc, Eoc) ->
     mit_eoc:get_notify_entry(Eoc);
 notify_entry(cpe, Cpe) ->
-    mit_cpe:get_notify_entry(Cpe).
-
+    mit_cpe:get_notify_entry(Cpe);
+notify_entry(dslam, Dslam) ->
+    mit_dslam:get_notify_entry(Dslam).
 
 
 get_type(olt) -> ?OLT;
 get_type(onu) -> ?ONU;
 get_type(eoc) -> ?EOC;
 get_type(cpe) -> ?CPE;
+get_type(dslam) -> ?DSLAM;
+
 get_type(?OLT) -> olt;
 get_type(?ONU) -> onu;
 get_type(?EOC) -> eoc;
-get_type(?CPE) -> cpe.
-
+get_type(?CPE) -> cpe;
+get_type(?DSLAM) -> dslam.
 
 
 format(Type, Attrs, Entry) ->
@@ -151,13 +160,13 @@ format(notify, [device_kind|Attrs], Entry, Data) ->
 
 format(notify, [collect_status|Attrs], Entry, Data) ->
     {value, Value} = dataset:get_value(collect_status, Entry,1),
-    format(notify, Attrs, Entry, [{oper_state, Value}|Data]);
+    format(notify, Attrs, Entry, [{collect_status, Value}|Data]);
 format(notify, [olt_state|Attrs], Entry, Data) ->
     {value, Value} = dataset:get_value(olt_state, Entry),
-    format(notify, Attrs, Entry, [{oper_state, Value}|Data]);
+    format(notify, Attrs, Entry, [{collect_status, Value}|Data]);
 format(notify, [onu_state|Attrs], Entry, Data) ->
     {value, Value} = dataset:get_value(onu_state, Entry),
-    format(notify, Attrs, Entry, [{oper_state, Value}|Data]);
+    format(notify, Attrs, Entry, [{collect_status, Value}|Data]);
 format(notify, [device_manu|Attrs], Entry, Data) ->
     {value, VendorId} = dataset:get_value(device_manu, Entry),
     Vendor =  mit_dict:lookup(vendor, VendorId),

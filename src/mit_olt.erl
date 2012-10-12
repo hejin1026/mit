@@ -26,7 +26,7 @@
 
 all() ->
     Sql = "select t2.means as means, t1.*,'olt' device_type   from mit_olts t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null",
+        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t1.olt_state < 2 and t2.means is not null",
     get_data(Sql).
 
 one(Id) ->
@@ -95,21 +95,24 @@ lookup(Dn) ->
     end.
 
 load() ->
+    ?ERROR("select  olt ...~n", []),
     case emysql:select({mit_olts, mem_attrs()}) of
         {ok, Olts} ->
-            lists:foreach(fun(Olt) ->
-                {value, Id} = dataset:get_value(id, Olt),
-                {value, Ip} = dataset:get_value(ip, Olt),
-                Dn = "olt=" ++ to_list(Ip),
-                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(olt,Id),ip=Ip, type = olt, parent = undefined, data = Olt},
-                mit:update(Entry)
-            end, Olts),
-            io:format("finish start olt : ~p ~n", [length(Olts)]),
+            ?ERROR("start mem olt ~n", []),
+            Store = fun(Olt) -> mnesia:write(entry(Olt)) end,
+            mnesia:sync_dirty(fun lists:foreach/2, [Store, Olts]),
+            ?ERROR("finish start olt : ~p ~n", [length(Olts)]),
             {ok, state};
         {error, Reason} ->
             ?ERROR("start failure...~p",[Reason]),
             {stop, Reason}
     end.
+
+entry(Olt) ->
+     {value, Id} = dataset:get_value(id, Olt),
+        {value, Ip} = dataset:get_value(ip, Olt),
+        Dn = "olt=" ++ to_list(Ip),
+        #entry{dn = to_binary(Dn), uid = mit_util:uid(olt,Id),ip=Ip, type = olt, parent = undefined, data = Olt}.
 
 add(Dn, Attrs) ->
     Olt = transform(Attrs),
@@ -152,7 +155,7 @@ update_olt(Dn, OldAttrs, Attrs) ->
             Datetime = {datetime, calendar:local_time()},
             case emysql:update(mit_olts, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
             {updated, {1, _}} -> %update mit cache
-                mit:update(#entry{dn = Dn, ip=Ip,type = olt,uid=mit_util:uid(olt, Id),
+                mit:update(#entry{dn = to_binary(Dn), ip=Ip,type = olt,uid=mit_util:uid(olt, Id),
                     parent = mit_util:bdn(Dn), data = MergedAttrs});
             {updated, {0, _Id}} ->
                 ?WARNING("stale Olt: ~p", [Dn]);
