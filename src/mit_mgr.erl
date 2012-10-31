@@ -58,7 +58,7 @@ handle_call(Request, _From, State) ->
 
 handle_cast(sync, State) ->
     sync(olt, mit_olt:all()),
-    sync(onu, mit_onu:snmp_all()),
+    sync(snmponu, mit_onu:snmp_all()),
     {noreply, State};
 
 
@@ -121,14 +121,17 @@ do_sync_entry(onu, Record) ->
     {value, Id} = dataset:get_value(id, Record),
     Entry = mit_util:notify_entry(onu, Record),
     {value, Dn} = dataset:get_value(dn, Entry),
-    Ip=  case dataset:get_value(ip, Onu,"0.0.0.0") of
+    Ip=  case dataset:get_value(ip, Entry,"0.0.0.0") of
                     {value, "0.0.0.0"} -> mit_util:uid(onu, Id);
                     {value,Ip0}        -> Ip0
                    end,
       mit:update(#entry{dn = Dn, uid = mit_util:uid(onu, Id), ip= Ip, parent = mit_util:bdn(Dn),
                         type = onu, data = mit_util:mit_entry(onu, Record)}),
     ?INFO("sync event ~p", [Dn]),
-    mit_event:notify({present, Dn, Entry});
+    case dataset:get_value(collect_type, Entry,1) of
+        {value,2} -> mit_event:notify({present, Dn, Entry});
+        _ -> ?WARNING("ftth onu cannot be collected. ~p,entry:~p", [Dn,Entry])
+    end;
 
 
 do_sync_entry(Type, Record) ->
