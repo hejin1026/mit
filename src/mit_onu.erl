@@ -1,4 +1,3 @@
-%默认有ip的 无型号的onu 为fttb onu
 -module(mit_onu).
 
 -created("hejin 2012-8-6").

@@ -84,7 +84,7 @@ store(Type, Records) ->
        Fttx = case dataset:get_value(fttx, Record,0) of
                     {value, 137} -> 2;
                     {value, 138} -> 1;
-                    _ -> 2 %默认有ip无型号的onu 为fttb onu
+                    _ -> 0
               end,
        IdDn = lists:concat([Type, "=", Id]),
        NameDn = lists:concat([Type, "=", binary_to_list(CodeName)]),
