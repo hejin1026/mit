@@ -80,7 +80,7 @@ init_cache() ->
 store(Type, Records) ->
    lists:foreach(fun(Record) ->
        {value, Id} = dataset:get_value(id, Record),
-       {value, CodeName} = dataset:get_value(code_name, Record)
+       {value, CodeName} = dataset:get_value(code_name, Record),
        Fttx = case dataset:get_value(fttx, Record,0) of
                     {value, 137} -> 2;
                     {value, 138} -> 1;
