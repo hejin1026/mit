@@ -33,7 +33,7 @@
 
 snmp_all() ->
     Sql = "select t2.means as means, t1.* ,'onu' device_type  from mit_onus t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.collect_type=2  and t1.onu_state < 2",
+        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.ip != '0.0.0.0' and t1.collect_type=2  and t1.onu_state < 2",
     get_data(Sql).
 
 all() ->
@@ -148,12 +148,11 @@ entry(Onu) ->
       {value, Id} = dataset:get_value(id, Onu),
       {value, OltDn} = dataset:get_value(oltdn, Onu),
       {value, Dn} = dataset:get_value(dn, Onu),
-      {value, Ip} = dataset:get_value(ip, Onu),
-      case dataset:get_value(colletc_type, Onu) of
-          {value, 2} ->
-              #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=Ip, type = onu, data = get_entry(Onu)};
-          _ ->
-              #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=mit_util:uid(onu,Id),type = onu, data = get_entry(Onu)}
+      case dataset:get_value(ip, Onu) of
+          {value,"0.0.0.0"} ->
+              #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=mit_util:uid(onu,Id), type = onu, data = get_entry(Onu)};
+          {value, Ip} ->
+              #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=Ip,type = onu, data = get_entry(Onu)}
        end.
 
 get_dn(OltIp, Onu) ->
@@ -228,9 +227,9 @@ insert_onu(Olt, Onu) when is_list(Olt) ->
     case emysql:insert(mit_onus, [{olt_id, OltId},{cityid, CityId},{name,DeviceName},{created_at, Now}|Onu]) of
         {updated, {1, Id}} ->
        %     ?INFO("insert onu dn:~p,result: ~p", [Dn, Onu]),
-            {value, Ip} =  case dataset:get_value(colletc_type, Onu) of
-                            {value, 2} -> dataset:get_value(ip, Onu, undefined);
-                                    _  -> {value,mit_util:uid(onu, Id)}
+            Ip=  case dataset:get_value(ip, Onu,"0.0.0.0") of
+                            {value, "0.0.0.0"} -> mit_util:uid(onu, Id);
+                            {value,Ip0}        -> Ip0
                            end,
             Dn = get_dn(OltIp, Onu),
             mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id),ip=Ip,type = onu,
@@ -256,9 +255,9 @@ update_onu(Dn, OldAttrs, NewAttrs) ->
             case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs]) of
                 {updated, {1, _}} -> %update mit cache
 					{value, Id} = dataset:get_value(id, OldAttrs),
-                    {value, Ip} =  case dataset:get_value(collect_type, MergedAttrs) of
-                                    {value, 2} -> dataset:get_value(ip, MergedAttrs, undefined);
-                                            _  -> {value,mit_util:uid(onu, Id)}
+                    Ip=  case dataset:get_value(ip, MergedAttrs,"0.0.0.0") of
+                                    {value, "0.0.0.0"} -> mit_util:uid(onu, Id);
+                                    {value,Ip0}        -> Ip0
                                    end,
                      mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id), ip = Ip,
                         type = onu, parent = mit_util:bdn(Dn), data = MergedAttrs});
@@ -295,22 +294,29 @@ transform([], Acc) ->
 transform([{ip, Ip} | T], Acc) ->
     Ip1 = to_list(Ip),
     if Ip1 == "0.0.0.0" ->
-            transform(T, [{collect_type,1}|Acc]);
+            transform(T,Acc);
        Ip1 == "255.255.255.255" ->
-            transform(T,  [{collect_type,1}|Acc]);
+           transform(T,Acc);
        Ip1 == "" ->
-            transform(T,  [{collect_type,1}|Acc]);
+           transform(T,Acc);
+       Ip1 == "1000000" ->
+           transform(T,Acc);
        Ip1 == "--" ->
-            transform(T,  [{collect_type,1}|Acc]);
+           transform(T,Acc);
         true ->
-            transform(T, [{ip, Ip},{collect_type,2}|Acc])
+            transform(T, [{ip, Ip}|Acc])
     end;
 transform([{vendor, Vendor}|T], Acc) ->
     ManuId = mit_dict:lookup(vendor, Vendor),
     transform(T, [{device_manu, ManuId}|Acc]);
 transform([{type,Type }|T], Acc) ->
     TypeId = mit_dict:lookup(type, Type),
-    transform(T, [{device_kind, TypeId},{onu_type,to_binary(Type)}|Acc]);
+    case TypeId of
+            [] -> transform(T, [{onu_type,to_binary(Type)}|Acc]);
+            _ ->
+                  CollectType = mit_dict:lookup_fttx(type, TypeId),
+                  transform(T, [{device_kind, TypeId},{onu_type,to_binary(Type)},{collect_type,CollectType}|Acc])
+    end;
 transform([H|T], Acc) when is_list(H) ->
     transform(T, [to_binary(H) | Acc]);
 transform([H|T], Acc) ->

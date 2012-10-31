@@ -9,7 +9,7 @@
 -behavior(gen_server).
 
 -export([start_link/0,
-         lookup/2]).
+         lookup/2,lookup_fttx/2]).
 
 -export([init/1,
          handle_call/3,
@@ -18,7 +18,7 @@
          terminate/2,
          code_change/3]).
 
--record(dict, {dn, value, type}).
+-record(dict, {dn, value, type,fttx}).
 
 
 lookup(vendor, Name)  ->
@@ -34,6 +34,17 @@ lookup(Dn) ->
             Dict#dict.value;
         [] ->
             []
+    end.
+lookup_fttx(type,Name) ->
+    Dn = lists:concat([type, "=", to_list(Name)]),
+    lookup_fttx(Dn).
+
+lookup_fttx(Dn) ->
+    case mnesia:dirty_read(dict, Dn) of
+        [Dict] ->
+            Dict#dict.fttx;
+        [] ->
+            0
     end.
 
 start_link() ->
@@ -60,7 +71,7 @@ init([]) ->
     {ok, state}.
 
 init_cache() ->
-	{ok, Types} = emysql:select({dic_device_types, [id, manufacturer_id, code_name]}),
+	{ok, Types} = emysql:select({dic_device_types, [id, manufacturer_id, code_name,fttx]}),
     {ok, Manus} = emysql:select({dic_manufacturers, [id, code_name]}),
     store(type, Types),
     store(vendor, Manus),
@@ -69,17 +80,18 @@ init_cache() ->
 store(Type, Records) ->
    lists:foreach(fun(Record) ->
        {value, Id} = dataset:get_value(id, Record),
-       case dataset:get_value(code_name, Record) of
-       {value, CodeName} ->
-           IdDn = lists:concat([Type, "=", Id]),
-           NameDn = lists:concat([Type, "=", binary_to_list(CodeName)]),
-           mnesia:sync_dirty(fun() ->
-                mnesia:write(#dict{dn=IdDn, value=CodeName, type=Type}),
-                mnesia:write(#dict{dn=NameDn, value=Id, type=Type})
-            end);
-       {false, _} ->
-           ?WARNING("dic has no code_name: ~p", [Id])
-       end
+       {value, CodeName} = dataset:get_value(code_name, Record)
+       Fttx = case dataset:get_value(fttx, Record,0) of
+                    {value, 137} -> 2;
+                    {value, 138} -> 1;
+                    _ -> 0
+              end,
+       IdDn = lists:concat([Type, "=", Id]),
+       NameDn = lists:concat([Type, "=", binary_to_list(CodeName)]),
+       mnesia:sync_dirty(fun() ->
+            mnesia:write(#dict{dn=IdDn, value=CodeName, type=Type,fttx=Fttx}),
+            mnesia:write(#dict{dn=NameDn, value=Id, type=Type,fttx=Fttx})
+        end)
     end, Records).
 
 handle_call(_Request, _From, State) ->

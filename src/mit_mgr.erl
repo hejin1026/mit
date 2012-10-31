@@ -121,9 +121,9 @@ do_sync_entry(onu, Record) ->
     {value, Id} = dataset:get_value(id, Record),
     Entry = mit_util:notify_entry(onu, Record),
     {value, Dn} = dataset:get_value(dn, Entry),
-    {value, Ip} =  case dataset:get_value(collect_type, Record) of
-                    {value, 2} -> dataset:get_value(ip, Record, undefined_in_sync);
-                            _  -> {value,mit_util:uid(onu, Id)}
+    Ip=  case dataset:get_value(ip, Onu,"0.0.0.0") of
+                    {value, "0.0.0.0"} -> mit_util:uid(onu, Id);
+                    {value,Ip0}        -> Ip0
                    end,
       mit:update(#entry{dn = Dn, uid = mit_util:uid(onu, Id), ip= Ip, parent = mit_util:bdn(Dn),
                         type = onu, data = mit_util:mit_entry(onu, Record)}),
