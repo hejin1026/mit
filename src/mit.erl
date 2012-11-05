@@ -252,7 +252,10 @@ do_handle_change(onu, DevId, Callback) ->
                           end,
             update(onu, Dn, DevId, Ip, Obj),
             ?INFO("mit_update,entry:~p,~n obj:~p",[NotifyEntry,Obj]),
-            Callback(Dn, NotifyEntry);
+            case dataset:get_value(collect_type, NotifyEntry,1) of
+                               {value, 2} -> Callback(Dn, NotifyEntry);
+                                     _    -> ?WARNING("ftth onu can not notify")
+                              end;
         [] ->
             ?ERROR("cannot find entry: ~p", [{DevId, onu}])
     end;
