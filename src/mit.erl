@@ -237,6 +237,7 @@ handle_change(?MIT_DELETE, {AtomType, DevId}, _ChangedLog) ->
         ok
     end;
 
+
 handle_change(Oper, {AtomType, DevId}, _ChangedLog) ->
     Uid = mit_util:uid(AtomType, DevId),
     ?ERROR("unexpected oper ~p on ~p ", [Oper, Uid]).
