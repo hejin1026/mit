@@ -68,7 +68,7 @@ handle_cast({sync_entry, Type}, State) ->
         onu ->  sync(onu, mit_onu:all());
         olt ->  sync(olt, mit_olt:all());
         port -> sync(port, mit_port:all_monet());
-        eoc -> sync(eoc, mit_eoc:all());
+        clt -> sync(clt, mit_clt:all());
         dslam -> sync(dslam, mit_dslam:all());
         _ ->    ignore
     end,
@@ -79,8 +79,8 @@ handle_cast({sync_entry, Type, Id}, State) ->
         onu ->  sync(onu, mit_onu:one(Id));
         olt ->  sync(olt, mit_olt:one(Id));
         port -> sync(port, mit_port:one(Id));
-        eoc -> sync(eoc, mit_eoc:one(Id));
-        cpe -> sync(cpe, mit_cpe:one(Id));
+        clt -> sync(clt, mit_clt:one(Id));
+        cnu -> sync(cnu, mit_cnu:one(Id));
         dslam -> sync(dslam, mit_dslam:one(Id));
         _ ->    ignore
     end,

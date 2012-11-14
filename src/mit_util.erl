@@ -45,15 +45,15 @@ uid(1, Id) ->
 uid(2, Id) ->
     uid(onu, Id);
 uid(3, Id) ->
-    uid(eoc, Id);
+    uid(clt, Id);
 uid(4, Id) ->
-    uid(cpe, Id);
+    uid(cnu, Id);
 uid(5, Id) ->
     uid(dslam, Id);
-uid(eoc, Id) ->
-    to_binary("eoc:" ++ integer_to_list(Id));
-uid(cpe, Id) ->
-    to_binary("cpe:" ++ integer_to_list(Id));
+uid(clt, Id) ->
+    to_binary("clt:" ++ integer_to_list(Id));
+uid(cnu, Id) ->
+    to_binary("cnu:" ++ integer_to_list(Id));
 uid(olt, Id) ->
     to_binary("olt:" ++ integer_to_list(Id));
 uid(onu, Id) ->
@@ -106,10 +106,10 @@ mit_entry(olt, Olt) ->
     mit_olt:get_entry(Olt);
 mit_entry(onu, Onu) ->
     mit_onu:get_entry(Onu);
-mit_entry(eoc, Eoc) ->
-    mit_eoc:get_entry(Eoc);
-mit_entry(cpe, Cpe) ->
-    mit_cpe:get_entry(Cpe);
+mit_entry(clt, Clt) ->
+    mit_clt:get_entry(Clt);
+mit_entry(cnu, Cnu) ->
+    mit_cnu:get_entry(Cnu);
 mit_entry(dslam, Dslam) ->
     mit_dslam:get_entry(Dslam).
 
@@ -119,24 +119,24 @@ notify_entry(port, Port) ->
     mit_port:get_notify_entry(Port);
 notify_entry(onu, Onu) ->
     mit_onu:get_notify_entry(Onu);
-notify_entry(eoc, Eoc) ->
-    mit_eoc:get_notify_entry(Eoc);
-notify_entry(cpe, Cpe) ->
-    mit_cpe:get_notify_entry(Cpe);
+notify_entry(clt, Clt) ->
+    mit_clt:get_notify_entry(Clt);
+notify_entry(cnu, Cnu) ->
+    mit_cnu:get_notify_entry(Cnu);
 notify_entry(dslam, Dslam) ->
     mit_dslam:get_notify_entry(Dslam).
 
 
 get_type(olt) -> ?OLT;
 get_type(onu) -> ?ONU;
-get_type(eoc) -> ?EOC;
-get_type(cpe) -> ?CPE;
+get_type(clt) -> ?CLT;
+get_type(cnu) -> ?CNU;
 get_type(dslam) -> ?DSLAM;
 
 get_type(?OLT) -> olt;
 get_type(?ONU) -> onu;
-get_type(?EOC) -> eoc;
-get_type(?CPE) -> cpe;
+get_type(?CLT) -> clt;
+get_type(?CNU) -> cnu;
 get_type(?DSLAM) -> dslam.
 
 

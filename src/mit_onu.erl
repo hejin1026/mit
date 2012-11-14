@@ -148,7 +148,7 @@ entry(Onu) ->
       {value, OltDn} = dataset:get_value(oltdn, Onu),
       {value, Dn} = dataset:get_value(dn, Onu),
       case dataset:get_value(ip, Onu) of
-          {value,"0.0.0.0"} ->
+          {value,<<"0.0.0.0">>} ->
               #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=mit_util:uid(onu,Id), type = onu, data = get_entry(Onu)};
           {value, Ip} ->
               #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=Ip,type = onu, data = get_entry(Onu)}
@@ -162,15 +162,13 @@ get_dn2(OltDn, Rdn) ->
       list_to_binary(lists:concat(["onu=", to_list(Rdn),",", to_list(OltDn)])).
 
 add(Dn, Onu0) ->
-    Now = calendar:local_time(),
     Onu = transform(Onu0),
     case lookup(Dn) of
         {ok, OldOnu} ->
             update_onu(Dn, OldOnu, Onu);
         false ->
             insert_onu(to_binary(Dn), Onu)
-    end,
-    ?ERROR("ad onu times ~p ~n,~p", [Now,calendar:local_time()]).
+    end.
 
 update(Dn, Attrs) ->
     case lookup(Dn) of
@@ -274,7 +272,7 @@ do_operstart_for_huawei(OldAttrs,MergedAttrs0) ->
 	{value, OldOper} = dataset:get_value(operstate, OldAttrs, 0),
     {value, NewOper} = dataset:get_value(operstate, MergedAttrs0,1),
 	if NewOper==3 andalso OldOper==2 ->
-		 ?WARNING("find exception operstate when update onu. OldAttrs:~p~n,MergedAttrs: ~p ~n",  [OldAttrs, MergedAttrs0]),
+		 ?INFO("find exception operstate when update onu. OldAttrs:~p~n,MergedAttrs: ~p ~n",  [OldAttrs, MergedAttrs0]),
 		lists:keyreplace(operstate, 1, MergedAttrs0, {operstate, 2});
 		true-> MergedAttrs0
 	end.

@@ -2,9 +2,9 @@
 
 -define(ONU, 2).
 
--define(EOC, 3).
+-define(CLT, 3).
 
--define(CPE, 4).
+-define(CNU, 4).
 
 -define(DSLAM, 5).
 

@@ -131,10 +131,10 @@ handle_data({entry, ports, Dn, Attrs}) ->%批量add 用户口 一个onu一次，
 			end
 		  end,
 	do(Fun);
-handle_data({entry, eoc, Dn, Attrs}) ->
-	mit_eoc:add(Dn, Attrs);
-handle_data({entry, cpe, Dn, Attrs}) ->
-	mit_cpe:add(Dn, Attrs);
+handle_data({entry, clt, Dn, Attrs}) ->
+	mit_clt:add(Dn, Attrs);
+handle_data({entry, cnu, Dn, Attrs}) ->
+	mit_cnu:add(Dn, Attrs);
 handle_data({entry, gem, Dn, Attrs}) ->
     do(fun()->
         try mit_gem:add(Dn, Attrs)
