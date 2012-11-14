@@ -160,7 +160,7 @@ update_cnu(Dn, OldAttrs, Attrs) ->
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             Datetime = {datetime, calendar:local_time()},
-            case emysql:update(mit_clt_terminals, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
+            case emysql:update(mit_cnus, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
                 {updated, {1, _Id}} -> %update mit cache
                     mit:update(#entry{dn = Dn, uid = mit_util:uid(cnu,Id), type = cnu, parent = mit_util:bdn(Dn), data = MergedAttrs});
                 {updated, {0, _Id}} ->
@@ -181,7 +181,7 @@ insert_cnu(Dn, Cnu) ->
             {value, DeviceName} = dataset:get_value(device_name, Cnu,""),
             ?INFO("insert cnu: ~p", [Dn]),
             Now = {datetime, calendar:local_time()},
-            case emysql:insert(mit_clt_terminals, [{device_manu,Device_manu},{name,DeviceName},
+            case emysql:insert(mit_cnus, [{device_manu,Device_manu},{name,DeviceName},
                 {clt_id, CltId},{cityid, CityId},
                 {created_at, Now}, {updated_at, Now}|Cnu]) of
                 {updated, {1, Id}} ->

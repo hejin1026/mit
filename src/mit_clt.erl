@@ -139,7 +139,7 @@ update(Dn, Attrs) ->
 
 insert_clt(Dn, Clt) ->
     CreatedAt = {datetime, calendar:local_time()},
-    case emysql:insert(mit_clt_heads, [{created_at, CreatedAt}|Clt]) of
+    case emysql:insert(mit_clts, [{created_at, CreatedAt}|Clt]) of
     {updated, {1, Id}} ->
         mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(clt, Id), type = clt, data = [{id, Id}|Clt]});
     {updated, {0, _}} ->
@@ -157,7 +157,7 @@ update_clt(Dn, OldAttrs, Attrs) ->
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             Datetime = {datetime, calendar:local_time()},
-            case emysql:update(mit_clt_heads, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
+            case emysql:update(mit_clts, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
             {updated, {1, _Id}} -> %update mit cache
                 mit:update(#entry{dn = Dn, uid = mit_util:uid(clt,Id), type = clt, data = MergedAttrs});
             {updated, {0, _Id}} ->
