@@ -249,7 +249,8 @@ update_onu(Dn, OldAttrs, NewAttrs) ->
 							_  	-> MergedAttrs0
 						   end,
             Datetime = {datetime, calendar:local_time()},
-            case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs]) of
+            MergedAttrs1 = lists:keydelete(entrance_id, 1, MergedAttrs),
+            case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs1]) of
                 {updated, {1, _}} -> %update mit cache
 					{value, Id} = dataset:get_value(id, OldAttrs),
                     Ip=  case dataset:get_value(ip, MergedAttrs,"0.0.0.0") of
