@@ -71,7 +71,8 @@ code_change(_OldVsn, State, _Extra) ->
 handle_datalist(DataList) when is_list(DataList) ->
     ?INFO("get disco data :~p",[DataList]),
 	lists:foreach(fun(Data) -> ?INFO("get disco data :~p",[Data]),
-    handle_data(Data) end, DataList);
+        handle_data(Data)
+    end, DataList);
 handle_datalist(Data)  ->
     handle_data(Data).
 
@@ -135,6 +136,10 @@ handle_data({entry, clt, Dn, Attrs}) ->
 	mit_clt:add(Dn, Attrs);
 handle_data({entry, cnu, Dn, Attrs}) ->
 	mit_cnu:add(Dn, Attrs);
+
+handle_data({entry, cnus, Dn, Attrs}) ->
+	mit_cnu:add_cnus(Dn, Attrs);
+
 handle_data({entry, gem, Dn, Attrs}) ->
     do(fun()->
         try mit_gem:add(Dn, Attrs)

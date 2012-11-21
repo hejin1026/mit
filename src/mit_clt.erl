@@ -66,7 +66,7 @@ mem_attrs() ->
      is_discovery,
      discovery_state,
 	 collect_status,
-     head_status,
+     clt_status,
      snmp_r,
      snmp_w,
      snmp_v,
@@ -104,7 +104,7 @@ load() ->
                {value, Id} = dataset:get_value(id, Clt),
                 {value, Ip} = dataset:get_value(ip, Clt),
                 Dn = "clt=" ++ to_list(Ip),
-                Entry = #entry{dn = to_binary(Dn), uid = mit_util:uid(clt,Id), ip= Ip,type = clt, data = Clt},
+                Entry = #entry{dn = to_binary(Dn),uid = mit_util:uid(clt,Id), ip= Ip,type = clt, data = Clt},
                 mit:update(Entry)
             end, Clts),
             io:format("finish start clts header : ~p ~n", [length(Clts)]),
@@ -156,10 +156,11 @@ update_clt(Dn, OldAttrs, Attrs) ->
         {changed, MergedAttrs,_} ->
             {value, Id} = dataset:get_value(id, OldAttrs, -1),
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
+            {value, Ip} = dataset:get_value(ip, MergedAttrs1),
             Datetime = {datetime, calendar:local_time()},
             case emysql:update(mit_clts, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
             {updated, {1, _Id}} -> %update mit cache
-                mit:update(#entry{dn = Dn, uid = mit_util:uid(clt,Id), type = clt, data = MergedAttrs});
+                mit:update(#entry{dn = Dn,ip=Ip,uid = mit_util:uid(clt,Id), type = clt, data = MergedAttrs});
             {updated, {0, _Id}} ->
                 ?WARNING("stale clt: ~p", [Dn]);
             {error, Reason} ->

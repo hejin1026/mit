@@ -22,6 +22,7 @@
          get_entry/1,
          get_notify_entry/1,
 		 add/2,
+		 add_cnus/2,
 		 update/2]).
 
 -import(extbif, [to_list/1]).
@@ -61,7 +62,7 @@ mem_attrs() ->
 	 clt_id,
      sysoid,
      device_name,
-	 terminal_status,
+	 cnu_status,
      mac,
      serial_no,
      hardware_version,
@@ -72,10 +73,7 @@ mem_attrs() ->
      device_kind,
      device_manu,
 	 rdn,
-     collect_status,
-     snmp_r,
-     snmp_w,
-     snmp_v
+     collect_status
     ].
 
 
@@ -122,7 +120,7 @@ load() ->
                       {ok, #entry{data = Clt}} ->
                           {value, CltIp} = dataset:get_value(ip, Clt),
                           Dn = lists:concat(["cnu=", to_list(Rdn), ",", "clt=", to_list(CltIp)]),
-                          mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(cnu,Id), type = cnu,
+                          mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(cnu,Id), type = cnu,ip=mit_util:uid(cnu,Id),
                               parent = mit_util:bdn(Dn), data = Cnu});
                       false ->
                           ignore
@@ -144,6 +142,23 @@ add(Dn, Cnu0) ->
             insert_cnu(Dn, Cnu)
     end.
 
+get_dn(CltDn, Rdn) ->
+      list_to_binary(lists:concat(["cnu=", to_list(Rdn),",", to_list(CltDn)])).
+
+add_cnus(CltDn, Cnus) ->
+    case mit:lookup(CltDn) of
+        {ok, #entry{uid = CltId, data = Clt}} ->
+            {ok, CnusInDb} = emysql:select(mit_cnus,{clt_id, mit_util:nid(CltId)}),
+            CnuList = [{to_binary(proplists:get_value(rdn,Cnu)), transform(Cnu)} || Cnu <- Cnus],
+            CnuDbList = [{to_binary(proplists:get_value(rdn,Cnu)), get_entry(Cnu)} || Cnu <- CnusInDb],
+            {AddList, UpdateList, _DelList} = extlib:list_compare(mit_util:get_key(CnuList), mit_util:get_key(CnuDbList)),
+            [insert_cnu(Clt, proplists:get_value(Rdn, CnuList)) || Rdn <- AddList],
+            [update_cnu(get_dn(CltDn, Rdn), proplists:get_value(Rdn, CnuDbList), proplists:get_value(Rdn, CnuList)) ||
+                Rdn <- UpdateList];
+         _ ->
+             ignore
+     end.
+
 update(Dn, Attrs) ->
     case lookup(Dn) of
         {ok, OldAttrs} ->
@@ -161,9 +176,9 @@ update_cnu(Dn, OldAttrs, Attrs) ->
             MergedAttrs1 = lists:keydelete(id, 1, MergedAttrs),
             Datetime = {datetime, calendar:local_time()},
             case emysql:update(mit_cnus, [{updated_at, Datetime} | MergedAttrs1], {id, Id}) of
-                {updated, {1, _Id}} -> %update mit cache
-                    mit:update(#entry{dn = Dn, uid = mit_util:uid(cnu,Id), type = cnu, parent = mit_util:bdn(Dn), data = MergedAttrs});
-                {updated, {0, _Id}} ->
+                {updated, {1, _}} ->  mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(cnu,Id), ip = mit_util:uid(cnu,Id),
+                   type = cnu, parent = mit_util:bdn(Dn), data = MergedAttrs});%update mit cache
+                {updated, {0, _}} ->
                     ?WARNING("stale cnu: ~p,~p", [Dn, Id]);
                 {error, Reason} ->
                     ?ERROR("~p", [Reason])
@@ -172,34 +187,31 @@ update_cnu(Dn, OldAttrs, Attrs) ->
             ok
     end.
 
-insert_cnu(Dn, Cnu) ->
-    case mit:lookup(mit_util:bdn(Dn)) of
-        {ok, #entry{data = Clt, type = clt}} ->
+insert_cnu(Clt, Cnu) ->
             {value, CltId} = dataset:get_value(id, Clt),
             {value, CityId} = dataset:get_value(cityid, Clt),
             {value, Device_manu} = dataset:get_value(device_manu, Clt),
             {value, DeviceName} = dataset:get_value(device_name, Cnu,""),
-            ?INFO("insert cnu: ~p", [Dn]),
+            {value, CltIp} = dataset:get_value(ip, Clt),
+            {value, Rdn} = dataset:get_value(rdn, Cnu),
+            Dn = list_to_binary(lists:concat(["cnu=", to_list(Rdn),",clt=", to_list(CltIp)])),
+            ?INFO("insert clt: ~p ~n cnu:~p", [Clt,Cnu]),
             Now = {datetime, calendar:local_time()},
-            case emysql:insert(mit_cnus, [{device_manu,Device_manu},{name,DeviceName},
-                {clt_id, CltId},{cityid, CityId},
-                {created_at, Now}, {updated_at, Now}|Cnu]) of
+            Attr =  [{device_manu,Device_manu},{name,DeviceName},
+                     {clt_id, CltId},{cityid, CityId},
+                     {created_at, Now}, {updated_at, Now}|Cnu],
+            case emysql:insert(mit_cnus, Attr) of
                 {updated, {1, Id}} ->
-                   ?INFO("insert cnu dn:~p,result: ~p", [Dn, Cnu]),
-                    mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(cnu,Id), type = cnu, parent = mit_util:bdn(Dn),
-                        data = [{id, Id}|Cnu]});
+                    mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(cnu,Id), ip = mit_util:uid(cnu,Id),
+                       type = cnu, parent = mit_util:bdn(Dn), data = [{id,Id},Attr]}),
+                   ?INFO("insert cnu result: ~p", [Cnu]);
                 {updated, {0, _}} ->
-                    ?WARNING("cannot find inserted cnu: ~p ~p", [Dn, Cnu]);
+                    ?WARNING("cannot find inserted cnu:~p", [Cnu]);
                 {error, Reason} ->
-                    ?ERROR("CltId : ~p,dn :~p, Reason: ~p", [CltId,Dn, Reason]);
+                    ?ERROR("Clt : ~p, Reason: ~p", [Clt, Reason]);
                 _ ->
                     ok
-            end;
-        {ok, #entry{type = Type}} ->
-            ?ERROR("cannot find :~p to clt: ~p", [Type, Dn]);
-        false ->
-            ?ERROR("cannot find clt: ~p", [Dn])
-    end.
+            end.
 
 transform(Attrs) ->
     transform(Attrs, []).

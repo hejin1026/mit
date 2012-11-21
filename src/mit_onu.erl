@@ -302,7 +302,10 @@ transform([{ip, Ip} | T], Acc) ->
        Ip1 == "--" ->
            transform(T,Acc);
         true ->
-            transform(T, [{ip, Ip}|Acc])
+            case Ip1 of
+                [$2,$5,$5,$.,$2,$5,$5,$.|_] ->  transform(T,Acc);
+                                    _ ->    transform(T, [{ip, Ip}|Acc])
+            end
     end;
 transform([{vendor, Vendor}|T], Acc) ->
     ManuId = mit_dict:lookup(vendor, Vendor),
