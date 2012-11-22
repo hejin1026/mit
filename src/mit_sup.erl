@@ -20,7 +20,7 @@ init([]) ->
     Workers = case application:get_env(mode) of
     {ok, master} -> %master mit
         [Event, Agent, Mgr,Dict|worker()];
-    {ok, evabus} -> %master_avail
+    {ok, evabus} -> %evabus
         [Agent,Dict|worker()];
     _ -> %slave node
         worker()
