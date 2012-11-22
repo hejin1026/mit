@@ -42,7 +42,7 @@ all() ->
 
 one(Id) ->
     Sql = "select t2.means as means, t1.* ,'onu' device_type  from mit_onus t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.ip != '0.0.0.0' and t1.collect_type=2 and t1.onu_state < 2 and t1.id = " ++ to_list(Id),
+        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.onu_state < 2 and t1.id = " ++ to_list(Id),
     get_data(Sql).
 
 redisco() ->

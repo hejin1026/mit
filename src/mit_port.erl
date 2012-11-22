@@ -124,7 +124,7 @@ load() ->
     ?ERROR("finish start port : ~p ~n",[length(Ports)]).
 
 entry(Port) ->
-       {value, OltDn} = dataset:get_value(oltdn, Port),
+        {value, OltDn} = dataset:get_value(oltdn, Port),
         {value, Id} = dataset:get_value(id, Port),
         {value, Dn} = dataset:get_value(dn, Port),
         #entry{dn = to_binary(Dn), uid = mit_util:uid(port,Id),ip = mit_util:uid(port,Id),
