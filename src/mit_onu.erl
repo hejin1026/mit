@@ -290,22 +290,9 @@ transform(Attrs) ->
 transform([], Acc) ->
     Acc;
 transform([{ip, Ip} | T], Acc) ->
-    Ip1 = to_list(Ip),
-    if Ip1 == "0.0.0.0" ->
-            transform(T,Acc);
-       Ip1 == "255.255.255.255" ->
-           transform(T,Acc);
-       Ip1 == "" ->
-           transform(T,Acc);
-       Ip1 == "1000000" ->
-           transform(T,Acc);
-       Ip1 == "--" ->
-           transform(T,Acc);
-        true ->
-            case Ip1 of
-                [$2,$5,$5,$.,$2,$5,$5,$.|_] ->  transform(T,Acc);
-                                    _ ->    transform(T, [{ip, Ip}|Acc])
-            end
+    case is_valid_ip(to_list(Ip)) of
+        false ->  transform(T,Acc);
+        true  ->  transform(T, [{ip, Ip}|Acc])
     end;
 transform([{vendor, Vendor}|T], Acc) ->
     ManuId = mit_dict:lookup(vendor, Vendor),
@@ -323,3 +310,10 @@ transform([H|T], Acc) when is_list(H) ->
 transform([H|T], Acc) ->
     transform(T, [H | Acc]).
 
+is_valid_ip(Ip) ->
+    case re:run(to_list(Ip), "^(1\\d+|2[0-2]\\d|[1-9]\\d?)\\.[0-9]+\\.[0-9]+\\.[0-9]+$") of
+        nomatch ->
+            false;
+        {match, _} ->
+            true
+    end.
