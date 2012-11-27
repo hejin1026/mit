@@ -184,10 +184,12 @@ get_key(List) ->
 
 
 do_update(Table, Attrs, OldAttrs, CallFun) ->
-    case mit_util:merge(Attrs, OldAttrs) of
+    Attrs0 = Attrs -- OldAttrs,
+    case mit_util:merge(Attrs0, OldAttrs) of
         {changed, MergedAttrs,_} ->
-            MergedAttrs0 = lists:keydelete(entrance_id, 1, MergedAttrs),
-            case emysql:update(Table, [{updated_at, {datetime, calendar:local_time()}} | MergedAttrs0]) of
+            Uid = proplists:get_value(id, OldAttrs,"-1"),
+            ?INFO("change attr: ~p,~p", [Uid,MergedAttrs--OldAttrs]),
+            case emysql:update(Table, [{id,Uid},{updated_at, {datetime, calendar:local_time()}} | MergedAttrs--OldAttrs]) of
                 {updated, {1, _}} ->
 					{value, Id} = dataset:get_value(id, OldAttrs),
                     if is_function(CallFun) -> CallFun(Id, MergedAttrs);
