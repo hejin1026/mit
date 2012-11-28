@@ -24,6 +24,8 @@
          terminate/2,
          code_change/3]).
 
+-import(extbif, [to_list/1]).
+
 -define(SERVER, ?MODULE).
 
 %%--------------------------------------------------------------------
@@ -128,9 +130,12 @@ do_sync_entry(onu, Record) ->
       mit:update(#entry{dn = Dn, uid = mit_util:uid(onu, Id), ip= Ip, parent = mit_util:bdn(Dn),
                         type = onu, data = mit_util:mit_entry(onu, Record)}),
     ?INFO("sync event ~p", [Dn]),
-    case dataset:get_value(collect_type, Entry,1) of
-        {value,2} -> mit_event:notify({present, Dn, Entry});
-        _ -> ?WARNING("ftth onu cannot be collected. ~p,entry:~p", [Dn,Entry])
+    {value,CollectType} = dataset:get_value(collect_type, Entry,1),
+    {value,Means} = dataset:get_value(means, Entry,"snmp"),
+    case {to_list(Means),CollectType} of
+        {"tl1",_} -> mit_event:notify({present, Dn, Entry});
+        {"snmp",2} -> mit_event:notify({present, Dn, Entry});
+        _ -> ?WARNING("snmp ftth onu cannot be collected. ~p,entry:~p", [Dn,Entry])
     end;
 
 
