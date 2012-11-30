@@ -71,7 +71,7 @@ mem_attrs() ->
      snmp_w,
      snmp_v,
 	 oper_mode,
-	 radio_channe,
+	 radio_channel,
 	 software_version,
 	 hardware_version,
 	 cnu_num

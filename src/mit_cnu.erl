@@ -67,7 +67,7 @@ mem_attrs() ->
      serial_no,
      hardware_version,
      software_version,
-     radio_channe,
+     radio_channel,
      oper_mode,
      discovery_state,
      device_kind,
