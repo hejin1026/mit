@@ -307,7 +307,7 @@ transform([{type,Type }|T], Acc) ->
     end;
 transform([H|T], Acc) when is_list(H) ->
     transform(T, [to_binary(H) | Acc]);
-transform([{H,"--"}|T], Acc) ->
+transform([{_,"--"}|T], Acc) ->
     transform(T, Acc);
 transform([H|T], Acc) ->
     transform(T, [H | Acc]).
