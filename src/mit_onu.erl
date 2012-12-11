@@ -300,7 +300,7 @@ transform([{vendor, Vendor}|T], Acc) ->
 transform([{type,Type }|T], Acc) ->
     TypeId = mit_dict:lookup(type, Type),
     case TypeId of
-            [] -> transform(T, [{onu_type,to_binary(Type)}|Acc]);
+            [] -> transform(T, [{device_kind,0},{onu_type,to_binary(Type)}|Acc]);
             _ ->
                   CollectType = mit_dict:lookup_fttx(type, TypeId),
                   transform(T, [{device_kind, TypeId},{onu_type,to_binary(Type)},{collect_type,CollectType}|Acc])

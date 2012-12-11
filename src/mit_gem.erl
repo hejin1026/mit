@@ -11,8 +11,29 @@
 
 -import(extbif, [to_list/1, to_binary/1]).
 
+attrs() ->
+    [id,
+    gem_dn,
+    line_profile,
+    gem_no,
+    gem_type,
+    tcont,
+    dba_type,
+    olt_id,
+    onu_id,
+    slot_no,
+    port_no,
+    onu_no,
+    downassuredbw,
+    downmaximumbw,
+    downfixedbw,
+    upassuredbw,
+    upmaximumbw,
+    upfixedbw
+    ].
+
 lookup(Dn) ->
-    emysql:select({mit_gems, {gem_dn, Dn}}).
+    emysql:select({mit_gems, attrs(),{gem_dn, Dn}}).
 
 add(GemDn, Gem) ->
     case lookup(GemDn) of

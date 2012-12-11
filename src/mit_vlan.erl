@@ -12,9 +12,22 @@
 
 -import(extbif, [to_list/1, to_binary/1]).
 
+attrs() ->
+    [id,
+    vlan_dn,
+    olt_id,
+    slot_no,
+    port_no,
+    onu_no,
+    line_profile,
+    gem_no,
+    mapping_no,
+    gem_id,
+    vlan_type
+    ].
 
 lookup(Dn) ->
-    emysql:select({mit_vlans, {vlan_dn, Dn}}).
+    emysql:select({mit_vlans,attrs(),{vlan_dn, Dn}}).
 
 add(Dn, Vlan) ->
     case lookup(to_binary(Dn)) of
