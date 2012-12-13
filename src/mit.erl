@@ -92,6 +92,7 @@ lookup(ip, Ip) ->
         false
     end.
 
+
 update(AtomType, Dn, Id, Ip, Data) ->
     update(#entry{dn = Dn, uid = mit_util:uid(AtomType, Id), ip= Ip, parent = mit_util:bdn(Dn),
         type = AtomType, data = mit_util:mit_entry(AtomType, Data)}).
