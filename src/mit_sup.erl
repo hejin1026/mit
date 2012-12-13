@@ -13,13 +13,15 @@ start_link() ->
 
 
 init([]) ->
+    Event = {mit_event, {mit_event, start_link, []},permanent, 10, worker, [mit_event]},
+    Agent = {mit_agent, {mit_agent, start_link, []},permanent, 10, worker, [mit_agent]},
+	Mgr =   {mit_mgr, {mit_mgr, start_link, []},permanent, 10, worker, [mit_mgr]},
+    Dict = {mit_dict, {mit_dict, start_link, []},permanent, 10, worker, [mit_dict]},
     Workers = case application:get_env(mode) of
-    {ok, master} -> %master node
-        Event = {mit_event, {mit_event, start_link, []},permanent, 10, worker, [mit_event]},
-        Agent = {mit_agent, {mit_agent, start_link, []},permanent, 10, worker, [mit_agent]},
-    	Mgr =   {mit_mgr, {mit_mgr, start_link, []},permanent, 10, worker, [mit_mgr]},
-        Dict = {mit_dict, {mit_dict, start_link, []},permanent, 10, worker, [mit_dict]},
-        [ Event, Agent, Mgr,Dict|worker()];
+    {ok, master} -> %master mit
+        [Event, Agent, Mgr,Dict|worker()];
+    {ok, evabus} -> %evabus
+        [Agent,Dict|worker()];
     _ -> %slave node
         worker()
     end,

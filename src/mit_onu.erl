@@ -1,4 +1,3 @@
-
 -module(mit_onu).
 
 -created("hejin 2012-8-6").
@@ -32,23 +31,23 @@
 
 
 snmp_all() ->
-    Sql = "select t2.means as means, t1.* ,'onu' device_type  from mit_onus t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.collect_type=2  and t1.onu_state < 2",
+    Sql = "select t2.means as means, t1.* ,'onu' device_type  from mit_onus t1 left join collect_means t2 on
+        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t1.entrance_id is not null and t2.means is not null and t1.ip != '0.0.0.0' and t1.collect_type=2  and t1.onu_state < 2",
     get_data(Sql).
 
 all() ->
-    Sql = "select t2.means as means, t1.* ,'onu' device_type  from mit_onus t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null   and t1.onu_state < 2",
+    Sql = "select t2.means as means, t1.* ,'onu' device_type  from mit_onus t1 left join collect_means t2 on
+        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t1.entrance_id is not null and t2.means is not null and t1.onu_state < 2",
     get_data(Sql).
 
 one(Id) ->
-    Sql = "select t2.means as means, t1.* ,'onu' device_type  from mit_onus t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.id = " ++ to_list(Id),
+    Sql = "select t2.means as means, t1.* ,'onu' device_type  from mit_onus t1 left join collect_means t2 on
+        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t1.entrance_id is not null and t2.means is not null and t1.onu_state < 2 and t1.id = " ++ to_list(Id),
     get_data(Sql).
 
 redisco() ->
-    Sql = "select t2.means as means, t1.*,'onu' device_type   from mit_onus t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.discovery_state = 2",
+    Sql = "select t2.means as means, t1.*,'onu' device_type   from mit_onus t1 left join collect_means t2 on
+        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.ip != '0.0.0.0' and t1.collect_type=2 and t1.discovery_state = 2",
     get_data(Sql).
 
 get_data(Sql) ->
@@ -148,12 +147,11 @@ entry(Onu) ->
       {value, Id} = dataset:get_value(id, Onu),
       {value, OltDn} = dataset:get_value(oltdn, Onu),
       {value, Dn} = dataset:get_value(dn, Onu),
-      {value, Ip} = dataset:get_value(ip, Onu),
-      case dataset:get_value(colletc_type, Onu) of
-          {value, 2} ->
-              #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=Ip, type = onu, data = get_entry(Onu)};
-          _ ->
-              #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=mit_util:uid(onu,Id),type = onu, data = get_entry(Onu)}
+      case dataset:get_value(ip, Onu) of
+          {value,<<"0.0.0.0">>} ->
+              #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=mit_util:uid(onu,Id), type = onu, data = get_entry(Onu)};
+          {value, Ip} ->
+              #entry{dn = to_binary(Dn), parent = to_binary(OltDn),uid = mit_util:uid(onu,Id), ip=Ip,type = onu, data = get_entry(Onu)}
        end.
 
 get_dn(OltIp, Onu) ->
@@ -164,15 +162,13 @@ get_dn2(OltDn, Rdn) ->
       list_to_binary(lists:concat(["onu=", to_list(Rdn),",", to_list(OltDn)])).
 
 add(Dn, Onu0) ->
-    Now = calendar:local_time(),
     Onu = transform(Onu0),
     case lookup(Dn) of
         {ok, OldOnu} ->
             update_onu(Dn, OldOnu, Onu);
         false ->
             insert_onu(to_binary(Dn), Onu)
-    end,
-    ?ERROR("ad onu times ~p ~n,~p", [Now,calendar:local_time()]).
+    end.
 
 update(Dn, Attrs) ->
     case lookup(Dn) of
@@ -228,9 +224,9 @@ insert_onu(Olt, Onu) when is_list(Olt) ->
     case emysql:insert(mit_onus, [{olt_id, OltId},{cityid, CityId},{name,DeviceName},{created_at, Now}|Onu]) of
         {updated, {1, Id}} ->
        %     ?INFO("insert onu dn:~p,result: ~p", [Dn, Onu]),
-            {value, Ip} =  case dataset:get_value(colletc_type, Onu) of
-                            {value, 2} -> dataset:get_value(ip, Onu, undefined);
-                                    _  -> {value,mit_util:uid(onu, Id)}
+            Ip=  case dataset:get_value(ip, Onu,"0.0.0.0") of
+                            {value, "0.0.0.0"} -> mit_util:uid(onu, Id);
+                            {value,Ip0}        -> Ip0
                            end,
             Dn = get_dn(OltIp, Onu),
             mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id),ip=Ip,type = onu,
@@ -253,12 +249,13 @@ update_onu(Dn, OldAttrs, NewAttrs) ->
 							_  	-> MergedAttrs0
 						   end,
             Datetime = {datetime, calendar:local_time()},
-            case emysql:update(mit_onus, [{updated_at, Datetime} | MergedAttrs]) of
+            Uid = proplists:get_value(id, OldAttrs,"-1"),
+            case emysql:update(mit_onus, [{id,Uid},{updated_at, Datetime} | MergedAttrs--OldAttrs]) of
                 {updated, {1, _}} -> %update mit cache
 					{value, Id} = dataset:get_value(id, OldAttrs),
-                    {value, Ip} =  case dataset:get_value(collect_type, MergedAttrs) of
-                                    {value, 2} -> dataset:get_value(ip, MergedAttrs, undefined);
-                                            _  -> {value,mit_util:uid(onu, Id)}
+                    Ip=  case dataset:get_value(ip, MergedAttrs,"0.0.0.0") of
+                                    {value, "0.0.0.0"} -> mit_util:uid(onu, Id);
+                                    {value,Ip0}        -> Ip0
                                    end,
                      mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id), ip = Ip,
                         type = onu, parent = mit_util:bdn(Dn), data = MergedAttrs});
@@ -276,7 +273,7 @@ do_operstart_for_huawei(OldAttrs,MergedAttrs0) ->
 	{value, OldOper} = dataset:get_value(operstate, OldAttrs, 0),
     {value, NewOper} = dataset:get_value(operstate, MergedAttrs0,1),
 	if NewOper==3 andalso OldOper==2 ->
-		 ?WARNING("find exception operstate when update onu. OldAttrs:~p~n,MergedAttrs: ~p ~n",  [OldAttrs, MergedAttrs0]),
+		 ?INFO("find exception operstate when update onu. OldAttrs:~p~n,MergedAttrs: ~p ~n",  [OldAttrs, MergedAttrs0]),
 		lists:keyreplace(operstate, 1, MergedAttrs0, {operstate, 2});
 		true-> MergedAttrs0
 	end.
@@ -293,26 +290,32 @@ transform(Attrs) ->
 transform([], Acc) ->
     Acc;
 transform([{ip, Ip} | T], Acc) ->
-    Ip1 = to_list(Ip),
-    if Ip1 == "0.0.0.0" ->
-            transform(T, [{collect_type,1}|Acc]);
-       Ip1 == "255.255.255.255" ->
-            transform(T,  [{collect_type,1}|Acc]);
-       Ip1 == "" ->
-            transform(T,  [{collect_type,1}|Acc]);
-       Ip1 == "--" ->
-            transform(T,  [{collect_type,1}|Acc]);
-        true ->
-            transform(T, [{ip, Ip},{collect_type,2}|Acc])
+    case is_valid_ip(to_list(Ip)) of
+        false ->  transform(T,Acc);
+        true  ->  transform(T, [{ip, Ip}|Acc])
     end;
 transform([{vendor, Vendor}|T], Acc) ->
     ManuId = mit_dict:lookup(vendor, Vendor),
     transform(T, [{device_manu, ManuId}|Acc]);
 transform([{type,Type }|T], Acc) ->
     TypeId = mit_dict:lookup(type, Type),
-    transform(T, [{device_kind, TypeId},{onu_type,to_binary(Type)}|Acc]);
+    case TypeId of
+            [] -> transform(T, [{device_kind,0},{onu_type,to_binary(Type)}|Acc]);
+            _ ->
+                  CollectType = mit_dict:lookup_fttx(type, TypeId),
+                  transform(T, [{device_kind, TypeId},{onu_type,to_binary(Type)},{collect_type,CollectType}|Acc])
+    end;
 transform([H|T], Acc) when is_list(H) ->
     transform(T, [to_binary(H) | Acc]);
+transform([{_,"--"}|T], Acc) ->
+    transform(T, Acc);
 transform([H|T], Acc) ->
     transform(T, [H | Acc]).
 
+is_valid_ip(Ip) ->
+    case re:run(to_list(Ip), "^(1\\d+|2[0-2]\\d|[1-9]\\d?)\\.[0-9]+\\.[0-9]+\\.[0-9]+$") of
+        nomatch ->
+            false;
+        {match, _} ->
+            true
+    end.

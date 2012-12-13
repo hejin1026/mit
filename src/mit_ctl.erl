@@ -44,16 +44,6 @@ start() ->
 
 
 %%get
-process(["status"]) ->
-    {InternalStatus, _} = init:get_status(),
-    io:format("node ~p is ~p", [node(), InternalStatus]),
-    case lists:keysearch(evabus, 1, application:which_applications()) of
-	false ->
-		io:format("mit is not running~n", []);
-	{value,_Version} ->
-		io:format("mit is running~n", [])
-    end,
-    ?STATUS_SUCCESS;
 
 process(["status", "worker_pool"]) ->
     Status = worker_pool:status(),

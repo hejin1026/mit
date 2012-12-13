@@ -238,9 +238,29 @@ handle_change(?MIT_DELETE, {AtomType, DevId}, _ChangedLog) ->
         ok
     end;
 
+
 handle_change(Oper, {AtomType, DevId}, _ChangedLog) ->
     Uid = mit_util:uid(AtomType, DevId),
     ?ERROR("unexpected oper ~p on ~p ", [Oper, Uid]).
+
+do_handle_change(onu, DevId, Callback) ->
+    case mit_util:get_entry(onu, DevId) of
+        [Obj|_] ->
+            NotifyEntry = mit_util:notify_entry(onu, Obj),
+            {value, Dn} = dataset:get_value(dn, NotifyEntry),
+           Ip=  case dataset:get_value(ip, NotifyEntry,"0.0.0.0") of
+                           {value, "0.0.0.0"} -> mit_util:uid(onu, DevId);
+                           {value,Ip0}        -> Ip0
+                          end,
+            update(onu, Dn, DevId, Ip, Obj),
+            ?INFO("mit_update,entry:~p,~n obj:~p",[NotifyEntry,Obj]),
+            case dataset:get_value(collect_type, NotifyEntry,1) of
+                               {value, 2} -> Callback(Dn, NotifyEntry);
+                                     _    -> ?WARNING("ftth onu can not notify~p",[NotifyEntry])
+                              end;
+        [] ->
+            ?ERROR("cannot find entry: ~p", [{DevId, onu}])
+    end;
 
 do_handle_change(AtomType, DevId, Callback) ->
     case mit_util:get_entry(AtomType, DevId) of

@@ -26,17 +26,17 @@
 
 all() ->
     Sql = "select t2.means as means, t1.*,'olt' device_type   from mit_olts t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t1.olt_state < 2 and t2.means is not null",
+        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t1.branch_id is not null and t1.olt_state < 2 and t2.means is not null",
     get_data(Sql).
 
 one(Id) ->
     Sql = "select t2.means as means, t1.* ,'olt' device_type  from mit_olts t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.id = " ++ to_list(Id),
+        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t1.branch_id is not null and t2.means is not null and t1.id = " ++ to_list(Id),
     get_data(Sql).
 
 redisco() ->
     Sql = "select t2.means as means, t1.* ,'olt' device_type  from mit_olts t1 LEFT join collect_means t2 on
-        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t2.means is not null and t1.discovery_state = 2",
+        (t1.cityid = t2.cityid and t1.device_manu = t2.device_manu) where t1.branch_id is not null and t2.means is not null and t1.discovery_state = 2",
     get_data(Sql).
 
 get_data(Sql) ->

@@ -24,6 +24,8 @@
          terminate/2,
          code_change/3]).
 
+-import(extbif, [to_list/1]).
+
 -define(SERVER, ?MODULE).
 
 %%--------------------------------------------------------------------
@@ -58,7 +60,7 @@ handle_call(Request, _From, State) ->
 
 handle_cast(sync, State) ->
     sync(olt, mit_olt:all()),
-    sync(onu, mit_onu:snmp_all()),
+    sync(snmponu, mit_onu:snmp_all()),
     {noreply, State};
 
 
@@ -68,7 +70,7 @@ handle_cast({sync_entry, Type}, State) ->
         onu ->  sync(onu, mit_onu:all());
         olt ->  sync(olt, mit_olt:all());
         port -> sync(port, mit_port:all_monet());
-        eoc -> sync(eoc, mit_eoc:all());
+        clt -> sync(clt, mit_clt:all());
         dslam -> sync(dslam, mit_dslam:all());
         _ ->    ignore
     end,
@@ -79,8 +81,8 @@ handle_cast({sync_entry, Type, Id}, State) ->
         onu ->  sync(onu, mit_onu:one(Id));
         olt ->  sync(olt, mit_olt:one(Id));
         port -> sync(port, mit_port:one(Id));
-        eoc -> sync(eoc, mit_eoc:one(Id));
-        cpe -> sync(cpe, mit_cpe:one(Id));
+        clt -> sync(clt, mit_clt:one(Id));
+        cnu -> sync(cnu, mit_cnu:one(Id));
         dslam -> sync(dslam, mit_dslam:one(Id));
         _ ->    ignore
     end,
@@ -121,14 +123,20 @@ do_sync_entry(onu, Record) ->
     {value, Id} = dataset:get_value(id, Record),
     Entry = mit_util:notify_entry(onu, Record),
     {value, Dn} = dataset:get_value(dn, Entry),
-    {value, Ip} =  case dataset:get_value(collect_type, Record) of
-                    {value, 2} -> dataset:get_value(ip, Record, undefined_in_sync);
-                            _  -> {value,mit_util:uid(onu, Id)}
+    Ip=  case dataset:get_value(ip, Entry,"0.0.0.0") of
+                    {value, "0.0.0.0"} -> mit_util:uid(onu, Id);
+                    {value,Ip0}        -> Ip0
                    end,
       mit:update(#entry{dn = Dn, uid = mit_util:uid(onu, Id), ip= Ip, parent = mit_util:bdn(Dn),
                         type = onu, data = mit_util:mit_entry(onu, Record)}),
     ?INFO("sync event ~p", [Dn]),
-    mit_event:notify({present, Dn, Entry});
+    {value,CollectType} = dataset:get_value(collect_type, Entry,1),
+    {value,Means} = dataset:get_value(means, Entry,"snmp"),
+    case {to_list(Means),CollectType} of
+        {"tl1",_} -> mit_event:notify({present, Dn, Entry});
+        {"snmp",2} -> mit_event:notify({present, Dn, Entry});
+        _ -> ?WARNING("snmp ftth onu cannot be collected. ~p,entry:~p", [Dn,Entry])
+    end;
 
 
 do_sync_entry(Type, Record) ->
