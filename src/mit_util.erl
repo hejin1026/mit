@@ -90,7 +90,10 @@ merge(Changed, [{Attr, Val}|T], OldAttrs, Items) ->
                 merge(Changed, T, OldAttrs, Items)
         end;
     {false, _} ->
-        merge(changed, T, [{Attr, Val} | OldAttrs], [Attr|Items])
+        case to_list(Val) == [] of
+            false -> merge(changed, T, [{Attr, Val} | OldAttrs], [Attr|Items]);
+             true -> merge(Changed, T, OldAttrs, Items)
+        end
     end;
 
 merge(Changed, [], OldAttrs, Items) ->

@@ -98,7 +98,11 @@ mem_attrs() ->
      ponid,
      snmp_r,
      snmp_w,
-     snmp_v
+     snmp_v,upfixedbw,h248status,
+     downmaxburstsize,downassuredbw,upmaxburstsize,upassuredbw,
+     loid,registermacaddress,userinfo,roundtriptime,softwareversion,
+     hardwareversion,mask,authpassword,
+     cfgmode,activestatus,regstate,regsn
     ].
 
 
@@ -178,7 +182,7 @@ update(Dn, Attrs) ->
             ?ERROR("cannot find onu ~p", [Dn])
     end.
 
-add_onus(OltDn, Onus) ->
+add_onus_bak(OltDn, Onus) ->
     case mit:lookup(OltDn) of
         {ok, #entry{uid = OltId, data = Olt}} ->
             {ok, OnusInDb} = emysql:select(mit_onus,{olt_id, mit_util:nid(OltId)}),
@@ -191,6 +195,20 @@ add_onus(OltDn, Onus) ->
          _ ->
              ignore
      end.
+
+
+add_onus(OltDn, Onus) ->
+	lists:foreach(fun(Onu) ->
+		Rdn = proplists:get_value(rdn,Onu,""),
+		OnuDn = get_dn2(OltDn, Rdn),
+	    case mit:lookup(OnuDn) of
+	        {ok, #entry{dn = _Dn, type = onu, data = OldOnu}} ->
+	            update_onu(OnuDn, OldOnu, transform(Onu));
+	      	_ ->
+	      	    insert_onu(OnuDn, transform(Onu))
+	     end
+		end,Onus).
+
 
 
 update_onus(OltDn, Onus) ->
@@ -241,28 +259,30 @@ insert_onu(Olt, Onu) when is_list(Olt) ->
 
 update_onu(Dn, OldAttrs, NewAttrs) ->
     %?INFO("update onu,dn:~p, oldattr: ~p, newattr: ~p", [Dn, OldAttrs, Attrs]),
-    case mit_util:merge(NewAttrs, OldAttrs) of
-        {changed, MergedAttrs0,_} ->
-           % ?WARNING("update onu dn:~p,newattr: ~p ~n,result : ~p", [Dn, Attrs, MergedAttrs]),
-			MergedAttrs = case dataset:get_value(device_manu, OldAttrs, false) of
-							{value, 2001} -> do_operstart_for_huawei(OldAttrs,MergedAttrs0);
-							_  	-> MergedAttrs0
-						   end,
-            Datetime = {datetime, calendar:local_time()},
-            Uid = proplists:get_value(id, OldAttrs,"-1"),
-            case emysql:update(mit_onus, [{id,Uid},{updated_at, Datetime} | MergedAttrs--OldAttrs]) of
+    NewAttrs0 = case dataset:get_value(device_manu, OldAttrs, false) of
+					{value, 2001} -> do_operstart_for_huawei(OldAttrs,NewAttrs);
+					_  	-> NewAttrs
+				   end,
+   NewAttrs1 = lists:keydelete(entrance_id, 1, NewAttrs0),
+   NewAttrs2 = lists:keydelete(device_name, 1, NewAttrs1),
+   NewAttrs3 = lists:keydelete(userinfo, 1, NewAttrs2),
+    case mit_util:merge(NewAttrs3, OldAttrs) of
+        {changed, MergedAttrs,Attrs} ->
+           % ?WARNING("changed :~p ~n update onu dn:~p,~nnewattr: ~p ~n,OldAttrs: ~p ~n ,result : ~p", [Attrs,Dn, NewAttrs0, OldAttrs,MergedAttrs]),
+           Uid = proplists:get_value(id, OldAttrs,"-1"),
+           %?WARNING("changed :~p ~p~n ", [Attrs,Uid]),
+            case emysql:update(mit_onus, [{id,Uid} | MergedAttrs--OldAttrs]) of
                 {updated, {1, _}} -> %update mit cache
-					{value, Id} = dataset:get_value(id, OldAttrs),
                     Ip=  case dataset:get_value(ip, MergedAttrs,"0.0.0.0") of
-                                    {value, "0.0.0.0"} -> mit_util:uid(onu, Id);
+                                    {value, "0.0.0.0"} -> mit_util:uid(onu, Uid);
                                     {value,Ip0}        -> Ip0
                                    end,
-                     mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Id), ip = Ip,
-                        type = onu, parent = mit_util:bdn(Dn), data = MergedAttrs});
-                {updated, {0, Id}} -> %stale onu?
-                    ?WARNING("stale onu: ~p,~p", [Dn, Id]);
+                     mit:update(#entry{dn = to_binary(Dn), uid = mit_util:uid(onu,Uid), ip = Ip,
+                        type = onu, parent = mit_util:bdn(Dn), data = [{id,Uid} |MergedAttrs]});
+                {updated, {0, _Id}} -> %stale onu?
+                    ?WARNING("stale onu: ~p~n,NewAttrs:~p~n, MergedAttrs~p~n, OldAttrs:~p~n changed~p", [Dn,NewAttrs, MergedAttrs,OldAttrs,Attrs]);
                 {error, Reason} ->
-                    ?ERROR("~p", [Reason])
+                    ?ERROR("~p~n  onu: ~p~n,NewAttrs:~p~n, MergedAttrs~p~n, OldAttrs:~p~n changed~p", [Reason,Dn,NewAttrs, MergedAttrs,OldAttrs,Attrs])
             end;
         {unchanged, _,_} ->
             ok
@@ -294,6 +314,8 @@ transform([{ip, Ip} | T], Acc) ->
         false ->  transform(T,Acc);
         true  ->  transform(T, [{ip, Ip}|Acc])
     end;
+transform([{authmacsn, Authmacsn}|T], Acc) ->
+    transform(T, [{authmacsn,trans_version(to_list(Authmacsn))}|Acc]);
 transform([{vendor, Vendor}|T], Acc) ->
     ManuId = mit_dict:lookup(vendor, Vendor),
     transform(T, [{device_manu, ManuId}|Acc]);
@@ -319,3 +341,8 @@ is_valid_ip(Ip) ->
         {match, _} ->
             true
     end.
+
+trans_version(Version) ->
+    lists:filter(fun(Item) ->
+        Item > 32  andalso  Item < 127
+    end, Version).

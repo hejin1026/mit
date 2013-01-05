@@ -157,6 +157,18 @@ handle_data({operate, Operate}) ->
 	handle_operate(Operate);
 handle_data({hostinfo, HostInfo}) ->
     handle_hostinfo(HostInfo);
+handle_data({update, Table,Data}) ->
+    do(fun()->
+        try update_data(Table,Data)
+        catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Dn, Attrs])
+        end
+       end);
+handle_data({insert, Table,Data}) ->
+    do(fun()->
+        try insert_data(Table,Data)
+        catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Dn, Attrs])
+        end
+       end);
 handle_data(_) ->
    ok.
 
@@ -196,3 +208,20 @@ handle_hostinfo(HostInfo) ->
         {error, Reason} ->
             ?ERROR("~p",[Reason])
     end.
+
+update_data(Table,Data) ->
+    case emysql:update(Table, [{updated_at, {datetime, calendar:local_time()}} | Data]) of
+        {updated, {1, _}} -> ?INFO("insert data: ~p,~p", [Table,Data]);
+        {updated, {0, _}} -> ?WARNING("stale data: ~p,~p", [Table,Data]);
+        {error, Reason} ->  ?ERROR("~p,~p,~p", [Table,Data,Reason])
+    end;
+
+
+insert_data(Table,Data) ->
+    case emysql:insert(Table, [{created_at, {datetime, calendar:local_time()}} | Data]) of
+        {updated, {1, _}} -> ?INFO("insert data: ~p,~p", [Table,Data]);
+        {updated, {0, _}} -> ?WARNING("stale data: ~p,~p", [Table,Data]);
+        {error, Reason} -> ?ERROR("~p,~p,~p", [Table,Data,Reason])
+    end;
+
+

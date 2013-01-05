@@ -64,7 +64,7 @@ load_areas() ->
     case emysql:select(areas) of
         {ok, Areas} ->
             lists:foreach(fun(Area) ->
-                      {value, Dn} = dataset:get_value(area_dn, Area),
+                      {value, Dn} = dataset:get_value(area_dn, Area,""),
                       {value, Id} = dataset:get_value(id, Area),
                       {value, Name} = dataset:get_value(area_name, Area),
                       {value, Level} = dataset:get_value(area_level, Area),
