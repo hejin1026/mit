@@ -25,7 +25,7 @@ lookup(Id) ->
    	lookup(id,Id).
 
 lookup(id,Id) ->
-   	case mnesia:dirty_read(areas, Id) of
+   	case mnesia:dirty_read(area, Id) of
         [Area] ->
             Area;
         [] ->
@@ -53,8 +53,7 @@ init([]) ->
             {atomic, ok} = mnesia:create_table(area,
                        [{ram_copies, [node()]},
                         {attributes, record_info(fields, area)}]),
-            load_areas(),
-		    erlang:send_after(30*60*1000, self(), load_areas);
+		    self() ! load_areas;
         _ -> %slave node
             ok
     end,
