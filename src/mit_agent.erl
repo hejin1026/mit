@@ -214,7 +214,7 @@ update_data(Table,Data) ->
         {updated, {1, _}} -> ?INFO("insert data: ~p,~p", [Table,Data]);
         {updated, {0, _}} -> ?WARNING("stale data: ~p,~p", [Table,Data]);
         {error, Reason} ->  ?ERROR("~p,~p,~p", [Table,Data,Reason])
-    end;
+    end.
 
 
 insert_data(Table,Data) ->
@@ -222,6 +222,6 @@ insert_data(Table,Data) ->
         {updated, {1, _}} -> ?INFO("insert data: ~p,~p", [Table,Data]);
         {updated, {0, _}} -> ?WARNING("stale data: ~p,~p", [Table,Data]);
         {error, Reason} -> ?ERROR("~p,~p,~p", [Table,Data,Reason])
-    end;
+    end.
 
 
