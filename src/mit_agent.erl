@@ -160,13 +160,13 @@ handle_data({hostinfo, HostInfo}) ->
 handle_data({update, Table,Data}) ->
     do(fun()->
         try update_data(Table,Data)
-        catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Dn, Data])
+        catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Table, Data])
         end
        end);
 handle_data({insert, Table,Data}) ->
     do(fun()->
         try insert_data(Table,Data)
-        catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Dn, Data])
+        catch _:Err ->?ERROR("bad error: ~p,~p,~p", [Err,Table, Data])
         end
        end);
 handle_data(_) ->
